@@ -1,0 +1,19 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "+TKtBzv23ywvmmqRiGEjUba4YmI=",
+			"path": "github.com/dgrijalva/jwt-go",
+			"revision": "dbeaa9332f19a944acb5736b4456cfcc02140e29",
+			"revisionTime": "2017-10-19T21:57:19Z"
+		},
+		{
+			"checksumSHA1": "0D1LWeoG7jgogWBhT9crwlaD5XY=",
+			"path": "github.com/jeromedoucet/route",
+			"revision": "58f86f06921b526c394dfcada43b63ada3966eb5",
+			"revisionTime": "2017-10-08T18:22:20Z"
+		}
+	],
+	"rootPath": "github.com/jeromedoucet/dahu"
+}

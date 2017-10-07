@@ -1,13 +1,13 @@
-APP_NAME		= dahu-server
-VERSION 		:= $(shell git rev-parse --short HEAD)
-ARCH			= amd64
-OS				= linux
-LD_FLAGS		= -ldflags "-X main.version=$(VERSION)"
-IMAGE_TAG		= 0.1-SNAPSHOT
-IMAGE_NAME 		= dahu-server
-CONTAINER_NAME 	= dahu-server
-REGISTRY		= jerdct
-PORTS 			= -p 8080:80
+APP_NAME = dahu-server
+VERSION = $(shell git rev-parse --short HEAD)
+ARCH = amd64
+OS = $(DAHU_OS_TARGET)
+LD_FLAGS = -ldflags "-X main.version=$(VERSION)"
+IMAGE_TAG = 0.1-SNAPSHOT
+IMAGE_NAME = dahu-server
+CONTAINER_NAME = dahu-server
+REGISTRY = jerdct
+PORTS = -p 8080:80
 
 all: $(APP_NAME)
 
