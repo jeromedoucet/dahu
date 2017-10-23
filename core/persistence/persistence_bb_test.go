@@ -9,7 +9,9 @@ import (
 	"github.com/jeromedoucet/dahu/core/persistence"
 )
 
-func TestShouldCreateANewJob(t *testing.T) {
+// Nominal test of job creation for
+// inmemory db
+func TestShouldCreateANewJobWithInMemoryDb(t *testing.T) {
 	// given
 	j := model.Job{Name: "test", Url: "github.com/test"}
 	c := configuration.InitConf()

@@ -88,21 +88,37 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 	defer wgTransaction.Done()
 	select {
 	case <-i.conf.Close:
-		// todo test
 		return nil, errors.New("persistence >> the database is close or closing. Operation impossible.")
 	default:
 		// only one read/write transaction is allowed.
 		i.rwMutex.Lock()
 		defer i.rwMutex.Unlock()
-		i.db.Update(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte("jobs")) // todo test if not nil
+		err := i.db.Update(func(tx *bolt.Tx) error {
+			var updateErr error
+			b := tx.Bucket([]byte("jobs"))
+			if b == nil {
+				return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
+			}
 			// prepare & serialize the data
-			job.GenerateId()             // todo handle and test this error
-			data, _ := json.Marshal(job) // todo handle and test this error
+			updateErr = job.GenerateId()
+			if updateErr != nil {
+				return updateErr
+			}
+			var data []byte
+			data, updateErr = json.Marshal(job)
+			if updateErr != nil {
+				return updateErr
+			}
 			b.Put([]byte(job.Name), data)
 			return nil
 		})
-		return job, nil // handle error from Update (and test it)
+		// if there is an error don't return the
+		// job. This error must not be ignored
+		if err == nil {
+			return job, nil
+		} else {
+			return nil, err
+		}
 
 	}
 }

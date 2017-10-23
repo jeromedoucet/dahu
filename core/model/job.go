@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -14,7 +15,9 @@ type Job struct {
 }
 
 func (j *Job) GenerateId() error {
-	// todo test when already has an id
+	if j.Id != "" {
+		return errors.New(fmt.Sprintf("the id of %+v already defined", j))
+	}
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	j.Id = strconv.Itoa(r.Int())
 
