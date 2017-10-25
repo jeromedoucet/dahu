@@ -42,7 +42,14 @@ func createInMemory(conf *configuration.Conf) {
 	inMemorySingleton.waitClose = &sync.WaitGroup{}
 	db, _ := bolt.Open(conf.PersistenceConf.Name, 0600, nil) // todo handle this error
 	db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucket([]byte("jobs"))
+		var err error
+		fmt.Println("test")
+		_, err = tx.CreateBucketIfNotExists([]byte("jobs"))
+		if err != nil {
+			// todo test me
+			return fmt.Errorf("create bucket: %s", err)
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte("users"))
 		if err != nil {
 			// todo test me
 			return fmt.Errorf("create bucket: %s", err)
@@ -123,6 +130,33 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 	}
 }
 
-func (i *inMemory) GetJob(id string, ctx context.Context) {
+func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {
 	panic("not implemented")
+}
+
+func (i *inMemory) GetUser(id []byte, ctx context.Context) (*model.User, error) {
+	// this increments will avoid
+	// closing database while a transaction
+	// is open
+	wgTransaction.Add(1)
+	defer wgTransaction.Done()
+	select {
+	case <-i.conf.Close:
+		return nil, errors.New("persistence >> the database is close or closing. Operation impossible.")
+	default:
+		var user model.User
+		err := i.db.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte("users"))
+			data := b.Get(id) //todo test return (with unmarshal error ? ))
+			json.Unmarshal(data, &user)
+			return nil
+		})
+		// if there is an error don't return the
+		// job. This error must not be ignored
+		if err == nil {
+			return &user, nil
+		} else {
+			return nil, err
+		}
+	}
 }

@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	bolt "github.com/coreos/bbolt"
@@ -64,5 +65,36 @@ func TestCreateJobShouldReturnAnErrorWhenNoBucket(t *testing.T) {
 	}
 	close(c.Close)
 	r.WaitClose()
+}
 
+func TestGetUserShouldReturnTheUserWhenItExists(t *testing.T) {
+	// given
+	u := model.User{Login: "test"}
+	u.SetPassword([]byte("test_test_test_test"))
+	c := configuration.InitConf()
+
+	ctx := context.Background()
+	rep := GetRepository(c)
+	r, _ := rep.(*inMemory)
+	// insertion of existing user
+	r.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		var data []byte
+		data, _ = json.Marshal(u)
+		b.Put([]byte(u.Login), data)
+		return nil
+	})
+
+	// when
+	actualUser, err := rep.GetUser([]byte(u.Login), ctx)
+
+	// then
+	if err != nil {
+		t.Errorf("expect to have no error when finding existing user, but got %s", err.Error())
+	}
+	if actualUser.Login != u.Login {
+		t.Errorf("expect to get user %s but got %s", u.String(), actualUser.String())
+	}
+	close(c.Close)
+	r.WaitClose()
 }

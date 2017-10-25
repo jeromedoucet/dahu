@@ -25,7 +25,7 @@ func TestShouldCreateANewJobWithInMemoryDb(t *testing.T) {
 
 	// then
 	if err != nil {
-		t.Errorf("expect job creation test to have no error but got %s", err.Error())
+		t.Fatalf("expect job creation test to have no error but got %s", err.Error())
 	}
 	if nj.Id == "" {
 		t.Errorf("expect CreateJob to affect an Id to the new job but got \"\"")

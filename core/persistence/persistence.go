@@ -12,7 +12,8 @@ import (
 // regardless of the underlying persistence system
 type Repository interface {
 	CreateJob(job *model.Job, ctx context.Context) (*model.Job, error)
-	GetJob(id string, ctx context.Context)
+	GetJob(id []byte, ctx context.Context) (*model.Job, error)
+	GetUser(id []byte, ctx context.Context) (*model.User, error)
 	WaitClose()
 }
 
