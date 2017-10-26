@@ -88,46 +88,33 @@ func (i *inMemory) WaitClose() {
 }
 
 func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, error) {
-	// this increments will avoid
-	// closing database while a transaction
-	// is open
-	wgTransaction.Add(1)
-	defer wgTransaction.Done()
-	select {
-	case <-i.conf.Close:
-		return nil, errors.New("persistence >> the database is close or closing. Operation impossible.")
-	default:
-		// only one read/write transaction is allowed.
-		i.rwMutex.Lock()
-		defer i.rwMutex.Unlock()
-		err := i.db.Update(func(tx *bolt.Tx) error {
-			var updateErr error
-			b := tx.Bucket([]byte("jobs"))
-			if b == nil {
-				return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
-			}
-			// prepare & serialize the data
-			updateErr = job.GenerateId()
-			if updateErr != nil {
-				return updateErr
-			}
-			var data []byte
-			data, updateErr = json.Marshal(job)
-			if updateErr != nil {
-				return updateErr
-			}
-			b.Put([]byte(job.Name), data)
-			return nil
-		})
-		// if there is an error don't return the
-		// job. This error must not be ignored
-		if err == nil {
-			return job, nil
-		} else {
-			return nil, err
+	err := i.doUpdateAction(func(tx *bolt.Tx) error {
+		var updateErr error
+		b := tx.Bucket([]byte("jobs"))
+		if b == nil {
+			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
 		}
-
+		// prepare & serialize the data
+		updateErr = job.GenerateId()
+		if updateErr != nil {
+			return updateErr
+		}
+		var data []byte
+		data, updateErr = json.Marshal(job)
+		if updateErr != nil {
+			return updateErr
+		}
+		b.Put([]byte(job.Name), data)
+		return nil
+	})
+	// if there is an error don't return the
+	// job. This error must not be ignored
+	if err == nil {
+		return job, nil
+	} else {
+		return nil, err
 	}
+
 }
 
 func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {
@@ -135,6 +122,27 @@ func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {
 }
 
 func (i *inMemory) GetUser(id []byte, ctx context.Context) (*model.User, error) {
+	var user model.User
+	err := i.doViewAction(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		data := b.Get(id) //todo test return (with unmarshal error ? ))
+		json.Unmarshal(data, &user)
+		return nil
+	})
+	// if there is an error don't return the
+	// job. This error must not be ignored
+	if err == nil {
+		return &user, nil
+	} else {
+		return nil, err
+	}
+}
+
+// doUpdateAction will ensure that the
+// db is available and then execute the function
+// inside a read/write transaction. An error is returned
+// if an issue appears.
+func (i *inMemory) doUpdateAction(action func(tx *bolt.Tx) error) error {
 	// this increments will avoid
 	// closing database while a transaction
 	// is open
@@ -142,21 +150,31 @@ func (i *inMemory) GetUser(id []byte, ctx context.Context) (*model.User, error) 
 	defer wgTransaction.Done()
 	select {
 	case <-i.conf.Close:
-		return nil, errors.New("persistence >> the database is close or closing. Operation impossible.")
+		return errors.New("persistence >> the database is close or closing. Operation impossible.")
 	default:
-		var user model.User
-		err := i.db.View(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte("users"))
-			data := b.Get(id) //todo test return (with unmarshal error ? ))
-			json.Unmarshal(data, &user)
-			return nil
-		})
-		// if there is an error don't return the
-		// job. This error must not be ignored
-		if err == nil {
-			return &user, nil
-		} else {
-			return nil, err
-		}
+		// only one read/write transaction is allowed.
+		i.rwMutex.Lock()
+		defer i.rwMutex.Unlock()
+		return i.db.Update(action)
 	}
+
+}
+
+// doViewAction will ensure that the
+// db is available and then execute the function
+// inside a read transaction. An error is returned
+// if an issue appears.
+func (i *inMemory) doViewAction(action func(tx *bolt.Tx) error) error {
+	// this increments will avoid
+	// closing database while a transaction
+	// is open
+	wgTransaction.Add(1)
+	defer wgTransaction.Done()
+	select {
+	case <-i.conf.Close:
+		return errors.New("persistence >> the database is close or closing. Operation impossible.")
+	default:
+		return i.db.View(action)
+	}
+
 }
