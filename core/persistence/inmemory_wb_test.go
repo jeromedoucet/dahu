@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"testing"
 
 	bolt "github.com/coreos/bbolt"
@@ -25,6 +26,11 @@ func TestCreateJobShouldReturnAnErrorWhenJobHasAnId(t *testing.T) {
 	// when
 	nj, err := r.CreateJob(&j, ctx)
 
+	// close and remove the db
+	close(c.Close)
+	r.WaitClose()
+	os.Remove(c.PersistenceConf.Name)
+
 	// then
 	if nj != nil {
 		t.Errorf(`expect to get no new job for a call on #CreateJob
@@ -34,8 +40,7 @@ func TestCreateJobShouldReturnAnErrorWhenJobHasAnId(t *testing.T) {
 		t.Error(`expect to have an error when calling #CreateJob with
 		a job that already have an id, but got nil`)
 	}
-	close(c.Close)
-	r.WaitClose()
+
 }
 
 func TestCreateJobShouldReturnAnErrorWhenNoBucket(t *testing.T) {
@@ -54,6 +59,11 @@ func TestCreateJobShouldReturnAnErrorWhenNoBucket(t *testing.T) {
 	// when
 	nj, err := r.CreateJob(&j, ctx)
 
+	// close and remove the db
+	close(c.Close)
+	r.WaitClose()
+	os.Remove(c.PersistenceConf.Name)
+
 	// then
 	if nj != nil {
 		t.Errorf(`expect to get no new job for a call on #CreateJob
@@ -63,8 +73,6 @@ func TestCreateJobShouldReturnAnErrorWhenNoBucket(t *testing.T) {
 		t.Error(`expect to have an error when calling #CreateJob when
 		no bucket, but got nil`)
 	}
-	close(c.Close)
-	r.WaitClose()
 }
 
 func TestGetUserShouldReturnTheUserWhenItExists(t *testing.T) {
@@ -88,6 +96,11 @@ func TestGetUserShouldReturnTheUserWhenItExists(t *testing.T) {
 	// when
 	actualUser, err := rep.GetUser([]byte(u.Login), ctx)
 
+	// close and remove the db
+	close(c.Close)
+	r.WaitClose()
+	os.Remove(c.PersistenceConf.Name)
+
 	// then
 	if err != nil {
 		t.Errorf("expect to have no error when finding existing user, but got %s", err.Error())
@@ -95,6 +108,4 @@ func TestGetUserShouldReturnTheUserWhenItExists(t *testing.T) {
 	if actualUser.Login != u.Login {
 		t.Errorf("expect to get user %s but got %s", u.String(), actualUser.String())
 	}
-	close(c.Close)
-	r.WaitClose()
 }

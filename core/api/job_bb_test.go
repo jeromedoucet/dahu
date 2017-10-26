@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -33,6 +34,7 @@ func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
 	close(conf.Close)
 	r.WaitClose()
 	s.Close()
+	os.Remove(conf.PersistenceConf.Name)
 
 	// then
 	if err != nil {
@@ -72,6 +74,7 @@ func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
 	r := persistence.GetRepository(conf)
 	close(conf.Close)
 	r.WaitClose()
+	os.Remove(conf.PersistenceConf.Name)
 
 	// then
 	if err != nil {
@@ -110,6 +113,7 @@ func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 	r := persistence.GetRepository(conf)
 	close(conf.Close)
 	r.WaitClose()
+	os.Remove(conf.PersistenceConf.Name)
 
 	// then
 	if err != nil {
@@ -148,6 +152,7 @@ func TestCreateANewJobShouldReturn400WhenNoName(t *testing.T) {
 	r := persistence.GetRepository(conf)
 	close(conf.Close)
 	r.WaitClose()
+	os.Remove(conf.PersistenceConf.Name)
 
 	// then
 	if err != nil {
@@ -186,6 +191,7 @@ func TestCreateANewJobShouldReturn400WhenNoUrl(t *testing.T) {
 	r := persistence.GetRepository(conf)
 	close(conf.Close)
 	r.WaitClose()
+	os.Remove(conf.PersistenceConf.Name)
 
 	// then
 	if err != nil {
@@ -226,8 +232,8 @@ func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 	// shutdown server and db gracefully
 	s.Close()
 	r := persistence.GetRepository(conf)
-
 	r.WaitClose()
+	os.Remove(conf.PersistenceConf.Name)
 
 	// then
 	if err != nil {
@@ -265,6 +271,7 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	r := persistence.GetRepository(conf)
 	close(conf.Close)
 	r.WaitClose()
+	os.Remove(conf.PersistenceConf.Name)
 
 	// then
 	if err != nil {

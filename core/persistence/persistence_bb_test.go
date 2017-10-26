@@ -2,6 +2,7 @@ package persistence_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/jeromedoucet/dahu/configuration"
@@ -23,6 +24,11 @@ func TestShouldCreateANewJobWithInMemoryDb(t *testing.T) {
 	// when
 	nj, err := r.CreateJob(&j, ctx)
 
+	// close and remove the db
+	close(c.Close)
+	r.WaitClose()
+	os.Remove(c.PersistenceConf.Name)
+
 	// then
 	if err != nil {
 		t.Fatalf("expect job creation test to have no error but got %s", err.Error())
@@ -36,6 +42,4 @@ func TestShouldCreateANewJobWithInMemoryDb(t *testing.T) {
 	if nj.Url != j.Url {
 		t.Errorf("expect the new job url to be %s but got %s", j.Url, nj.Url)
 	}
-	close(c.Close)
-	r.WaitClose()
 }
