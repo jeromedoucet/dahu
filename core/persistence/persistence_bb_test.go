@@ -2,12 +2,12 @@ package persistence_test
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/jeromedoucet/dahu/configuration"
 	"github.com/jeromedoucet/dahu/core/model"
 	"github.com/jeromedoucet/dahu/core/persistence"
+	"github.com/jeromedoucet/dahu/tests"
 )
 
 // Nominal test of job creation for
@@ -25,9 +25,7 @@ func TestShouldCreateANewJobWithInMemoryDb(t *testing.T) {
 	nj, err := r.CreateJob(&j, ctx)
 
 	// close and remove the db
-	close(c.Close)
-	r.WaitClose()
-	os.Remove(c.PersistenceConf.Name)
+	tests.CleanPersistence(c)
 
 	// then
 	if err != nil {

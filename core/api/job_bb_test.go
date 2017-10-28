@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -14,7 +13,7 @@ import (
 	"github.com/jeromedoucet/dahu/configuration"
 	"github.com/jeromedoucet/dahu/core/api"
 	"github.com/jeromedoucet/dahu/core/model"
-	"github.com/jeromedoucet/dahu/core/persistence"
+	"github.com/jeromedoucet/dahu/tests"
 )
 
 func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
@@ -30,11 +29,8 @@ func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
 		"application/json", bytes.NewBuffer(body))
 
 	// shutdown server and db gracefully
-	r := persistence.GetRepository(conf)
-	close(conf.Close)
-	r.WaitClose()
 	s.Close()
-	os.Remove(conf.PersistenceConf.Name)
+	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -71,10 +67,7 @@ func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
 	resp, err := cli.Do(req)
 	// shutdown server and db gracefully
 	s.Close()
-	r := persistence.GetRepository(conf)
-	close(conf.Close)
-	r.WaitClose()
-	os.Remove(conf.PersistenceConf.Name)
+	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -110,10 +103,7 @@ func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 	resp, err := cli.Do(req)
 	// shutdown server and db gracefully
 	s.Close()
-	r := persistence.GetRepository(conf)
-	close(conf.Close)
-	r.WaitClose()
-	os.Remove(conf.PersistenceConf.Name)
+	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -149,10 +139,7 @@ func TestCreateANewJobShouldReturn400WhenNoName(t *testing.T) {
 	resp, err := cli.Do(req)
 	// shutdown server and db gracefully
 	s.Close()
-	r := persistence.GetRepository(conf)
-	close(conf.Close)
-	r.WaitClose()
-	os.Remove(conf.PersistenceConf.Name)
+	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -188,10 +175,7 @@ func TestCreateANewJobShouldReturn400WhenNoUrl(t *testing.T) {
 	resp, err := cli.Do(req)
 	// shutdown server and db gracefully
 	s.Close()
-	r := persistence.GetRepository(conf)
-	close(conf.Close)
-	r.WaitClose()
-	os.Remove(conf.PersistenceConf.Name)
+	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -231,9 +215,7 @@ func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 
 	// shutdown server and db gracefully
 	s.Close()
-	r := persistence.GetRepository(conf)
-	r.WaitClose()
-	os.Remove(conf.PersistenceConf.Name)
+	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -243,7 +225,6 @@ func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 		t.Fatalf("Expect 500 return code when error on persistence. "+
 			"Got %d", resp.StatusCode)
 	}
-
 }
 
 func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
@@ -268,10 +249,7 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	resp, err := cli.Do(req)
 	// shutdown server and db gracefully
 	s.Close()
-	r := persistence.GetRepository(conf)
-	close(conf.Close)
-	r.WaitClose()
-	os.Remove(conf.PersistenceConf.Name)
+	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {

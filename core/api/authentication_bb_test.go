@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	bolt "github.com/coreos/bbolt"
@@ -14,14 +13,8 @@ import (
 	"github.com/jeromedoucet/dahu/configuration"
 	"github.com/jeromedoucet/dahu/core/api"
 	"github.com/jeromedoucet/dahu/core/model"
-	"github.com/jeromedoucet/dahu/core/persistence"
+	"github.com/jeromedoucet/dahu/tests"
 )
-
-// authentication => 200
-// authentication => 401 (bad password an no existing user)
-// todo validity time variable
-
-// todo factorization
 
 // testing succefull authentication
 func TestAuthenticationShouldReturn200AndAToken(t *testing.T) {
@@ -59,10 +52,7 @@ func TestAuthenticationShouldReturn200AndAToken(t *testing.T) {
 
 	// close, remove the db and shutdown the server
 	s.Close()
-	close(conf.Close)
-	rep := persistence.GetRepository(conf)
-	rep.WaitClose()
-	os.Remove(conf.PersistenceConf.Name)
+	tests.CleanPersistence(conf)
 	// then
 
 	// check the response code and error
@@ -119,10 +109,7 @@ func TestAuthenticationShouldReturn404AndNoTokenWhenNoUserFound(t *testing.T) {
 
 	// close, remove the db and shutdown the server
 	s.Close()
-	close(conf.Close)
-	rep := persistence.GetRepository(conf)
-	rep.WaitClose()
-	os.Remove(conf.PersistenceConf.Name)
+	tests.CleanPersistence(conf)
 	// then
 
 	// check the response code and error
@@ -175,10 +162,7 @@ func TestAuthenticationShouldReturn401AndNoTokenWhenBadPassword(t *testing.T) {
 
 	// close, remove the db and shutdown the server
 	s.Close()
-	close(conf.Close)
-	rep := persistence.GetRepository(conf)
-	rep.WaitClose()
-	os.Remove(conf.PersistenceConf.Name)
+	tests.CleanPersistence(conf)
 	// then
 
 	// check the response code and error
