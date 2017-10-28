@@ -23,9 +23,10 @@ type Persistence struct {
 // configuration of Dahu
 // http API
 type Api struct {
-	Port            int
-	ShutdownTimeOut time.Duration
-	Secret          string
+	Port                  int
+	ShutdownTimeOut       time.Duration
+	Secret                string
+	TokenValidityDuration time.Duration
 }
 
 // global configuration of
@@ -44,5 +45,6 @@ func InitConf() (c *Conf) {
 	c.PersistenceConf.Name = "dahu"
 	c.ApiConf.Port = 80
 	c.ApiConf.ShutdownTimeOut = 30 * time.Second
+	c.ApiConf.TokenValidityDuration = 5 * time.Minute
 	return
 }

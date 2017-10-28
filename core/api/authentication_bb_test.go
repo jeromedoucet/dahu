@@ -1,0 +1,196 @@
+package api_test
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+
+	bolt "github.com/coreos/bbolt"
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/jeromedoucet/dahu/configuration"
+	"github.com/jeromedoucet/dahu/core/api"
+	"github.com/jeromedoucet/dahu/core/model"
+	"github.com/jeromedoucet/dahu/core/persistence"
+)
+
+// authentication => 200
+// authentication => 401 (bad password an no existing user)
+// todo validity time variable
+
+// todo factorization
+
+// testing succefull authentication
+func TestAuthenticationShouldReturn200AndAToken(t *testing.T) {
+	// given
+
+	// setup the conf
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+
+	// insert existing user in the db
+	password := "test_test_test_test"
+	u := model.User{Login: "test"}
+	u.SetPassword([]byte(password))
+	db, _ := bolt.Open(conf.PersistenceConf.Name, 0600, nil)
+	db.Update(func(tx *bolt.Tx) error {
+		b, _ := tx.CreateBucketIfNotExists([]byte("users"))
+		var data []byte
+		data, _ = json.Marshal(u)
+		b.Put([]byte(u.Login), data)
+		return nil
+	})
+	db.Close()
+
+	// start the server and setup the request
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	l := model.Login{Id: []byte(u.Login), Password: []byte(password)}
+	body, _ := json.Marshal(l)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login",
+		s.URL), bytes.NewBuffer(body))
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// close, remove the db and shutdown the server
+	s.Close()
+	close(conf.Close)
+	rep := persistence.GetRepository(conf)
+	rep.WaitClose()
+	os.Remove(conf.PersistenceConf.Name)
+	// then
+
+	// check the response code and error
+	if err != nil {
+		t.Errorf("expect to get no error when trying to authenticate with correct credentials, but got %s", err.Error())
+	}
+	if resp.StatusCode != 200 {
+		t.Errorf("expect status code 200 when trying to authenticate with correct credentials, but got %d", resp.StatusCode)
+	}
+
+	// check the token itself
+	tok := model.Token{}
+	dec := json.NewDecoder(resp.Body)
+	dec.Decode(&tok)
+
+	keyFunc := func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(conf.ApiConf.Secret), nil
+	}
+	token, parsingError := jwt.Parse(tok.Value, keyFunc)
+	if parsingError != nil {
+		t.Errorf("expect to have no error parsing the token, but got : %s", parsingError.Error())
+	}
+	if !token.Valid {
+		t.Errorf("expect the token to be valid, but this %+v is not", token)
+	}
+}
+
+// testing authentication when no user found
+func TestAuthenticationShouldReturn404AndNoTokenWhenNoUserFound(t *testing.T) {
+	// given
+
+	// setup the conf
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+
+	// insert existing user in the db
+	password := "test_test_test_test"
+	u := model.User{Login: "test"}
+
+	// start the server and setup the request
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	l := model.Login{Id: []byte(u.Login), Password: []byte(password)}
+	body, _ := json.Marshal(l)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login",
+		s.URL), bytes.NewBuffer(body))
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// close, remove the db and shutdown the server
+	s.Close()
+	close(conf.Close)
+	rep := persistence.GetRepository(conf)
+	rep.WaitClose()
+	os.Remove(conf.PersistenceConf.Name)
+	// then
+
+	// check the response code and error
+	if err != nil {
+		t.Errorf("expect to get no error when trying to authenticate without user found, but got %s", err.Error())
+	}
+	if resp.StatusCode != 404 {
+		t.Errorf("expect status code 404 when trying to authenticate without user found , but got %d", resp.StatusCode)
+	}
+	b := bytes.Buffer{}
+	b.ReadFrom(resp.Body)
+	if b.String() != "" {
+		t.Errorf("expect to have no answer when no user found but got %s", b.String())
+	}
+}
+
+// testing succefull authentication
+func TestAuthenticationShouldReturn401AndNoTokenWhenBadPassword(t *testing.T) {
+	// given
+
+	// setup the conf
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+
+	// insert existing user in the db
+	password := "test_test_test_test"
+	u := model.User{Login: "test"}
+	u.SetPassword([]byte(password))
+	db, _ := bolt.Open(conf.PersistenceConf.Name, 0600, nil)
+	db.Update(func(tx *bolt.Tx) error {
+		b, _ := tx.CreateBucketIfNotExists([]byte("users"))
+		var data []byte
+		data, _ = json.Marshal(u)
+		b.Put([]byte(u.Login), data)
+		return nil
+	})
+	db.Close()
+
+	// start the server and setup the request
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	l := model.Login{Id: []byte(u.Login), Password: []byte("totototototototototototo")}
+	body, _ := json.Marshal(l)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login",
+		s.URL), bytes.NewBuffer(body))
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// close, remove the db and shutdown the server
+	s.Close()
+	close(conf.Close)
+	rep := persistence.GetRepository(conf)
+	rep.WaitClose()
+	os.Remove(conf.PersistenceConf.Name)
+	// then
+
+	// check the response code and error
+	if err != nil {
+		t.Errorf("expect to get no error when trying to authenticate with bad credential, but got %s", err.Error())
+	}
+	if resp.StatusCode != 401 {
+		t.Errorf("expect status code 404 when trying to authenticate with bad credential, but got %d", resp.StatusCode)
+	}
+	b := bytes.Buffer{}
+	b.ReadFrom(resp.Body)
+	if b.String() != "" {
+		t.Errorf("expect to have no answer when bad credential but got %s", b.String())
+	}
+}

@@ -17,12 +17,12 @@ func TestSetPasswordShouldUseBcryptWithSalt(t *testing.T) {
 
 	// then
 	var err error
-	err = bcrypt.CompareHashAndPassword(usr.password, password)
+	err = bcrypt.CompareHashAndPassword(usr.Password, password)
 	if err != nil {
 		t.Errorf("expect the password to match but get %s", err.Error())
 	}
 	var cost int
-	cost, err = bcrypt.Cost(usr.password)
+	cost, err = bcrypt.Cost(usr.Password)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -51,7 +51,7 @@ func TestComparePasswordFailure(t *testing.T) {
 	// given
 	password := []byte("some_password")
 	hashedPassword, _ := bcrypt.GenerateFromPassword(password, 13)
-	usr := User{Login: "test", password: hashedPassword}
+	usr := User{Login: "test", Password: hashedPassword}
 
 	// when
 	err := usr.ComparePassword([]byte("other_password"))
@@ -65,7 +65,7 @@ func TestComparePasswordSuccess(t *testing.T) {
 	// given
 	password := []byte("some_password")
 	hashedPassword, _ := bcrypt.GenerateFromPassword(password, 13)
-	usr := User{Login: "test", password: hashedPassword}
+	usr := User{Login: "test", Password: hashedPassword}
 
 	// when
 	err := usr.ComparePassword(password)

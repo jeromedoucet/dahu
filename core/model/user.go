@@ -10,12 +10,25 @@ import (
 
 var regexPassword *regexp.Regexp = regexp.MustCompile(".{12}")
 
+// type used for authentication
+// on /login
+type Login struct {
+	Id       []byte `json:"id"`
+	Password []byte `json:"password"`
+}
+
+// this is the answer to
+// a successfull login call
+type Token struct {
+	Value string `json:"value"`
+}
+
 // User of Dahu system.
 // A user can be a human, or not.
 // It represents only an identity.
 type User struct {
 	Login    string `json:"login"`
-	password []byte // unexported and excluded from json marshaling
+	Password []byte // unexported and excluded from json marshaling
 }
 
 func (u *User) String() string {
@@ -31,10 +44,10 @@ func (u *User) SetPassword(password []byte) error {
 	if err != nil {
 		return err
 	}
-	u.password = hashedPassword
+	u.Password = hashedPassword
 	return nil
 }
 
 func (u *User) ComparePassword(password []byte) error {
-	return bcrypt.CompareHashAndPassword(u.password, password)
+	return bcrypt.CompareHashAndPassword(u.Password, password)
 }
