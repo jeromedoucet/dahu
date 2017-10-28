@@ -104,7 +104,7 @@ func (r *Run) Start(ctx context.Context) error {
 			cancel()
 			r.m.Lock()
 			defer r.m.Unlock()
-			log.Printf("INFO >> teminate the comand whit error : %+v", err)
+			log.Printf("INFO >> teminate the comand whith error : %+v", err)
 			if r.cmd.ProcessState.Success() {
 				r.status = SUCCESS
 			} else if r.status != CANCELED { // if the command has already been canceled, must not change status
@@ -155,7 +155,7 @@ func (r *Run) Done() chan interface{} {
 }
 
 // cancel a running command.
-// if tryin to cancel a non-started
+// if trying to cancel a non-started
 // or a finished command, it will
 // return an error.
 // return an error if the command

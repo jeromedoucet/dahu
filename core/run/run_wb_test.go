@@ -3,9 +3,10 @@ package run
 import (
 	"bytes"
 	"context"
-	"github.com/jeromedoucet/dahu/core/model"
 	"testing"
 	"time"
+
+	"github.com/jeromedoucet/dahu/core/model"
 )
 
 // test the behavior of the run module when
@@ -31,13 +32,14 @@ func TestRunStartWithFailure(t *testing.T) {
 	<-r.Done()
 	// then
 	if r.Status() != model.FAILURE {
-		t.Errorf("Expect FAILURE state (%d), got : %d", model.FAILURE, r.Status)
+		t.Errorf("Expect FAILURE state (%d), got : %d", model.FAILURE, r.Status())
 	}
 	if buf.String() != "Failure\n" {
 		t.Errorf("Expect 'Failure' in output writer, got : %#v", buf.String())
 	}
 }
 
+// test the cancelation after a given time out
 func TestRunStartWithTimeOut(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
@@ -58,7 +60,7 @@ func TestRunStartWithTimeOut(t *testing.T) {
 	<-r.Done()
 	// then
 	if r.Status() != model.FAILURE {
-		t.Errorf("Expect FAILURE state (%d), got : %d", model.FAILURE, r.Status)
+		t.Errorf("Expect FAILURE state (%d), got : %d", model.FAILURE, r.Status())
 	}
 	if buf.String() != "Time out" {
 		t.Errorf("Expect 'Time out' in output writer, got : %#v", buf.String())
@@ -86,7 +88,7 @@ func TestRunStartWithSuccess(t *testing.T) {
 	<-r.Done()
 	// then
 	if r.Status() != model.SUCCESS {
-		t.Errorf("Expect SUCCESS state (%d), got : %d", model.SUCCESS, r.Status)
+		t.Errorf("Expect SUCCESS state (%d), got : %d", model.SUCCESS, r.Status())
 	}
 	if buf.String() != "Success\n" {
 		t.Errorf("Expect 'Success' in output writer, got : %#v", buf.String())
@@ -121,13 +123,14 @@ func TestRunStartTwiceShouldReturnError(t *testing.T) {
 		t.Errorf("Expect the second call to return an error, but got : nil")
 	}
 	if r.Status() != model.SUCCESS {
-		t.Errorf("Expect SUCCESS state (%d), got : %d", model.SUCCESS, r.Status)
+		t.Errorf("Expect SUCCESS state (%d), got : %d", model.SUCCESS, r.Status())
 	}
 	if buf.String() != "Success\n" {
 		t.Errorf("Expect 'Success' in output writer, got : %#v", buf.String())
 	}
 }
 
+// test a cancelation of a run
 func TestRunStartWithCancelation(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
@@ -158,6 +161,8 @@ func TestRunStartWithCancelation(t *testing.T) {
 	}
 }
 
+// test that we can not cancel a run
+// before starting it
 func TestRunCancelationShouldFailWhenNotStarted(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
@@ -180,6 +185,7 @@ func TestRunCancelationShouldFailWhenNotStarted(t *testing.T) {
 	}
 }
 
+// test that we can not cancel a run after it has finished
 func TestRunCancelationShouldFailWhenFinished(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)

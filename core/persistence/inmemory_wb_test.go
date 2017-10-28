@@ -11,9 +11,10 @@ import (
 	"github.com/jeromedoucet/dahu/core/model"
 )
 
-// test enforcement of unicity of job
-// test error on marshal
+// todo test unicity for user
 
+// test that we may not try to insert / create
+// a job that already has an id
 func TestCreateJobShouldReturnAnErrorWhenJobHasAnId(t *testing.T) {
 	// given
 	j := model.Job{Name: "test", Url: "github.com/test"}
@@ -43,6 +44,8 @@ func TestCreateJobShouldReturnAnErrorWhenJobHasAnId(t *testing.T) {
 
 }
 
+// test that the case when the bucket 'jobs' is missing is
+// properly handle => an error is returned
 func TestCreateJobShouldReturnAnErrorWhenNoBucket(t *testing.T) {
 	// given
 	j := model.Job{Name: "test", Url: "github.com/test"}
@@ -75,6 +78,7 @@ func TestCreateJobShouldReturnAnErrorWhenNoBucket(t *testing.T) {
 	}
 }
 
+// test the nominal case of #GetUser
 func TestGetUserShouldReturnTheUserWhenItExists(t *testing.T) {
 	// given
 	u := model.User{Login: "test"}
@@ -107,5 +111,67 @@ func TestGetUserShouldReturnTheUserWhenItExists(t *testing.T) {
 	}
 	if actualUser.Login != u.Login {
 		t.Errorf("expect to get user %s but got %s", u.String(), actualUser.String())
+	}
+}
+
+// test the case when the user is not found for #GetUser.
+// => an error is returned
+func TestGetUserShouldReturnAnErrorWhenItDoesntExist(t *testing.T) {
+	// given
+	u := model.User{Login: "test"}
+	u.SetPassword([]byte("test_test_test_test"))
+	c := configuration.InitConf()
+
+	ctx := context.Background()
+	rep := GetRepository(c)
+	r, _ := rep.(*inMemory)
+
+	// when
+	actualUser, err := rep.GetUser([]byte(u.Login), ctx)
+
+	// close and remove the db
+	close(c.Close)
+	r.WaitClose()
+	os.Remove(c.PersistenceConf.Name)
+
+	// then
+	if err == nil {
+		t.Error("expect to have an error when searching non-existing user, but got nil")
+	}
+	if actualUser != nil {
+		t.Errorf("expect to get nil but got %s", actualUser.String())
+	}
+}
+
+// test that the case where there is no bucket for user
+// is properly handle at #GetUser
+func TestGetUserShouldReturnAnErrorWhenNoBucket(t *testing.T) {
+	// given
+	u := model.User{Login: "test"}
+	u.SetPassword([]byte("test_test_test_test"))
+	c := configuration.InitConf()
+
+	ctx := context.Background()
+	rep := GetRepository(c)
+	r, _ := rep.(*inMemory)
+	r.db.Update(func(tx *bolt.Tx) error {
+		tx.DeleteBucket([]byte("users"))
+		return nil
+	})
+
+	// when
+	actualUser, err := rep.GetUser([]byte(u.Login), ctx)
+
+	// close and remove the db
+	close(c.Close)
+	r.WaitClose()
+	os.Remove(c.PersistenceConf.Name)
+
+	// then
+	if err == nil {
+		t.Error("expect to have an error when searching user without any users bucket, but got nil")
+	}
+	if actualUser != nil {
+		t.Errorf("expect to get nil but got %s", actualUser.String())
 	}
 }
