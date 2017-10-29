@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "LhRQthBRjkXhfPEo9sk1s5Y47iI=",
+			"path": "github.com/coreos/bbolt",
+			"revision": "3eac9d3bd834d07cf6b83b780a750cd10c16597a",
+			"revisionTime": "2017-09-28T16:33:06Z"
+		},
+		{
 			"checksumSHA1": "+TKtBzv23ywvmmqRiGEjUba4YmI=",
 			"path": "github.com/dgrijalva/jwt-go",
 			"revision": "dbeaa9332f19a944acb5736b4456cfcc02140e29",
@@ -17,6 +23,12 @@
 		{
 			"checksumSHA1": "UWjVYmoHlIfHzVIskELHiJQtMOI=",
 			"path": "golang.org/x/crypto/bcrypt",
+			"revision": "2509b142fb2b797aa7587dad548f113b2c0f20ce",
+			"revisionTime": "2017-10-23T14:45:55Z"
+		},
+		{
+			"checksumSHA1": "oVPHWesOmZ02vLq2fglGvf+AMgk=",
+			"path": "golang.org/x/crypto/blowfish",
 			"revision": "2509b142fb2b797aa7587dad548f113b2c0f20ce",
 			"revisionTime": "2017-10-23T14:45:55Z"
 		}
