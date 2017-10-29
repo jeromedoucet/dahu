@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os/exec"
@@ -27,10 +28,15 @@ const (
 
 // run params
 type RunParams struct {
+	Id           string
 	Image        string
 	Env          map[string]string
 	OutputWriter io.Writer
 	TimeOut      time.Duration
+}
+
+func (p *RunParams) ContainerName() string {
+	return fmt.Sprintf("dahu-run-%s", p.Id)
 }
 
 // initiate a new Run with given params
@@ -48,7 +54,7 @@ func NewRun(p RunParams) *Run {
 // with some constants ('run')
 // and thanks to run params (env and image name for instance).
 func formatRunParams(p RunParams) []string {
-	args := []string{"run"}
+	args := []string{"run", "--name", p.ContainerName()}
 	if len(p.Env) != 0 {
 		buf := make([]string, 0)
 		for key, value := range p.Env {

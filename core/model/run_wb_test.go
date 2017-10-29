@@ -1,4 +1,4 @@
-package run
+package model_test
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jeromedoucet/dahu/core/model"
+	"github.com/jeromedoucet/dahu/tests"
 )
 
 // test the behavior of the run module when
@@ -17,6 +18,7 @@ func TestRunStartWithFailure(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
+		Id:    "test-1",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
 			"REPO_URL": "git@github.com:jeromedoucet/dahu-images.git",
@@ -24,6 +26,7 @@ func TestRunStartWithFailure(t *testing.T) {
 		},
 		OutputWriter: buf,
 	}
+	defer tests.RemoveContainer(params.ContainerName())
 	r := model.NewRun(params)
 
 	// when
@@ -44,6 +47,7 @@ func TestRunStartWithTimeOut(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
+		Id:    "test-2",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
 			"REPO_URL": "git@github.com:jeromedoucet/dahu-images.git",
@@ -52,6 +56,7 @@ func TestRunStartWithTimeOut(t *testing.T) {
 		OutputWriter: buf,
 		TimeOut:      time.Second * 1,
 	}
+	defer tests.RemoveContainer(params.ContainerName())
 	r := model.NewRun(params)
 
 	// when
@@ -73,6 +78,7 @@ func TestRunStartWithSuccess(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
+		Id:    "test-3",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
 			"REPO_URL": "git@github.com:jeromedoucet/dahu-images.git",
@@ -80,6 +86,7 @@ func TestRunStartWithSuccess(t *testing.T) {
 		},
 		OutputWriter: buf,
 	}
+	defer tests.RemoveContainer(params.ContainerName())
 	r := model.NewRun(params)
 
 	// when
@@ -101,6 +108,7 @@ func TestRunStartTwiceShouldReturnError(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
+		Id:    "test-4",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
 			"REPO_URL": "git@github.com:jeromedoucet/dahu-images.git",
@@ -108,6 +116,7 @@ func TestRunStartTwiceShouldReturnError(t *testing.T) {
 		},
 		OutputWriter: buf,
 	}
+	defer tests.RemoveContainer(params.ContainerName())
 	r := model.NewRun(params)
 
 	// when
@@ -135,6 +144,7 @@ func TestRunStartWithCancelation(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
+		Id:    "test-5",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
 			"REPO_URL": "git@github.com:jeromedoucet/dahu-images.git",
@@ -142,6 +152,7 @@ func TestRunStartWithCancelation(t *testing.T) {
 		},
 		OutputWriter: buf,
 	}
+	defer tests.RemoveContainer(params.ContainerName())
 	r := model.NewRun(params)
 
 	// when
@@ -167,6 +178,7 @@ func TestRunCancelationShouldFailWhenNotStarted(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
+		Id:    "test-6",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
 			"REPO_URL": "git@github.com:jeromedoucet/dahu-images.git",
@@ -190,6 +202,7 @@ func TestRunCancelationShouldFailWhenFinished(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
+		Id:    "test-7",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
 			"REPO_URL": "git@github.com:jeromedoucet/dahu-images.git",
@@ -197,6 +210,8 @@ func TestRunCancelationShouldFailWhenFinished(t *testing.T) {
 		},
 		OutputWriter: buf,
 	}
+
+	defer tests.RemoveContainer(params.ContainerName())
 	r := model.NewRun(params)
 
 	// when
@@ -209,3 +224,5 @@ func TestRunCancelationShouldFailWhenFinished(t *testing.T) {
 		t.Error("Expect the cancel call to return an error, but got nil")
 	}
 }
+
+// todo test with existing container name

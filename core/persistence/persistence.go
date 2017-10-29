@@ -11,9 +11,19 @@ import (
 // functions that allow manipulating data
 // regardless of the underlying persistence system
 type Repository interface {
+
+	// job creation. If the job already has an id,
+	// an error is returned.
 	CreateJob(job *model.Job, ctx context.Context) (*model.Job, error)
+
+	// get an existing job identified by the id parameter.
 	GetJob(id []byte, ctx context.Context) (*model.Job, error)
+
+	// get an existing user identified by the id parameter.
 	GetUser(id []byte, ctx context.Context) (*model.User, error)
+
+	// this call will block until the underlying
+	// connection or persistence system is open.
 	WaitClose()
 }
 

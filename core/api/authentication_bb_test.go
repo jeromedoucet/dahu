@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	bolt "github.com/coreos/bbolt"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/jeromedoucet/dahu/configuration"
 	"github.com/jeromedoucet/dahu/core/api"
@@ -29,15 +28,7 @@ func TestAuthenticationShouldReturn200AndAToken(t *testing.T) {
 	password := "test_test_test_test"
 	u := model.User{Login: "test"}
 	u.SetPassword([]byte(password))
-	db, _ := bolt.Open(conf.PersistenceConf.Name, 0600, nil)
-	db.Update(func(tx *bolt.Tx) error {
-		b, _ := tx.CreateBucketIfNotExists([]byte("users"))
-		var data []byte
-		data, _ = json.Marshal(u)
-		b.Put([]byte(u.Login), data)
-		return nil
-	})
-	db.Close()
+	tests.InsertObject(conf, []byte("users"), []byte(u.Login), u)
 
 	// start the server and setup the request
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
@@ -139,15 +130,7 @@ func TestAuthenticationShouldReturn401AndNoTokenWhenBadPassword(t *testing.T) {
 	password := "test_test_test_test"
 	u := model.User{Login: "test"}
 	u.SetPassword([]byte(password))
-	db, _ := bolt.Open(conf.PersistenceConf.Name, 0600, nil)
-	db.Update(func(tx *bolt.Tx) error {
-		b, _ := tx.CreateBucketIfNotExists([]byte("users"))
-		var data []byte
-		data, _ = json.Marshal(u)
-		b.Put([]byte(u.Login), data)
-		return nil
-	})
-	db.Close()
+	tests.InsertObject(conf, []byte("users"), []byte(u.Login), u)
 
 	// start the server and setup the request
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
