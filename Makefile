@@ -13,11 +13,13 @@ all: $(APP_NAME)
 
 $(APP_NAME):
 	@echo "Building application for localhost"
+	go get -u github.com/kardianos/govendor
+	govendor sync
 	go build $(LD_FLAGS) -o $(APP_NAME)
 
 test: all
 	@echo "Running tests..."
-	go test -cover -race ./...
+	go test -cover ./...
 
 clean:
 	rm -f $(APP_NAME)
