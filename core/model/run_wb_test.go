@@ -167,9 +167,6 @@ func TestRunStartWithCancelation(t *testing.T) {
 	if r.Status() != model.CANCELED {
 		t.Errorf("Expect CANCELED state (%d), got : %d", model.CANCELED, r.Status())
 	}
-	if buf.String() != "Canceled" {
-		t.Errorf("Expect 'Canceled' in output writer, got : %#v", buf.String())
-	}
 }
 
 // test that we can not cancel a run

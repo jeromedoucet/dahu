@@ -12,26 +12,29 @@ import (
 	"github.com/jeromedoucet/dahu/core/model"
 )
 
-// this mutex is used to ensure
-// that inMemorySingleton is
-// a singleton.
-var oInMemory = &sync.Once{}
-
 // used when stopping the db.
 // it allow to wait for all transaction
 // to be finished
 var wgTransaction = &sync.WaitGroup{}
 
-// this sync is used only when closing
-// the current underlying db instance
-var resetMutex = &sync.Mutex{}
+// this sync is used to ensure that only
+// on instance of inMemory exist
+// at a given moment.
+var singletonMutex = &sync.Mutex{}
 
 var inMemorySingleton *inMemory
 
 func getOrCreateInMemory(conf *configuration.Conf) Repository {
-	oInMemory.Do(func() {
+	// we may not use Once sync structure because the singleton
+	// may be deleted and then recreated.
+	// The sync strategy is agressive, but this
+	// function may not be called very often, and there is
+	// no other way to really prevents race conditions.
+	singletonMutex.Lock()
+	defer singletonMutex.Unlock()
+	if inMemorySingleton == nil {
 		createInMemory(conf)
-	})
+	}
 	return inMemorySingleton
 }
 
@@ -62,14 +65,19 @@ func createInMemory(conf *configuration.Conf) {
 	go func() {
 		// release lock for WaitClose func
 		defer inMemorySingleton.waitClose.Done()
+		// wait for the closing signal to be throw
 		<-inMemorySingleton.conf.Close
+		// when closing, the first thing
+		// is to avoid any new call on #getOrCreateInMemory
+		singletonMutex.Lock()
+		defer singletonMutex.Unlock()
 		// according to bbolt documentation
 		// all transactions must be closed
 		// before closing the db
 		wgTransaction.Wait()
 		inMemorySingleton.db.Close() // todo handle this error
-		// reset the singletong
-		oInMemory = &sync.Once{}
+		// reset the singleton
+		inMemorySingleton = nil
 	}()
 }
 

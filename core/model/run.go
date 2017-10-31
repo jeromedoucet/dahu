@@ -179,7 +179,6 @@ func (r *Run) Cancel() error {
 	// todo test this err
 	if err == nil {
 		r.status = CANCELED
-		r.cmd.Stderr.Write([]byte("Canceled"))
 	}
 	return err
 }
