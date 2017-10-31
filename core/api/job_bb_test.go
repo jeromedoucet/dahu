@@ -18,7 +18,7 @@ import (
 
 func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
 	// given
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
+	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
@@ -56,7 +56,7 @@ func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
+	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
 	tokenStr := getToken("other_secret", time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -92,7 +92,7 @@ func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
+	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
 	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(-1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -128,7 +128,7 @@ func TestCreateANewJobShouldReturn400WhenNoName(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	job := model.Job{Url: "git@github.com:jeromedoucet/dahu.git"}
+	job := model.Job{Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
 	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -164,7 +164,7 @@ func TestCreateANewJobShouldReturn400WhenNoUrl(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	job := model.Job{Name: "dahu"}
+	job := model.Job{Name: "dahu", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
 	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -188,6 +188,41 @@ func TestCreateANewJobShouldReturn400WhenNoUrl(t *testing.T) {
 
 }
 
+func TestCreateANewJobShouldReturn400WhenNoImage(t *testing.T) {
+	// given
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+
+	// request setup
+	job := model.Job{Url: "git@github.com:jeromedoucet/dahu.git", Name: "dahu"}
+	body, _ := json.Marshal(job)
+	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req := buildJobsPostReq(body, tokenStr, s.URL)
+
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+	// shutdown server and db gracefully
+	s.Close()
+	tests.CleanPersistence(conf)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != 400 {
+		t.Fatalf("Expect 400 return code when trying to create a job without name. "+
+			"Got %d", resp.StatusCode)
+	}
+}
+
 func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 	// given
 
@@ -203,7 +238,7 @@ func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 	close(conf.Close)
 
 	// request setup
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
+	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
 	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -239,7 +274,7 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
+	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
 	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)

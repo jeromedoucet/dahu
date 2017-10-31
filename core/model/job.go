@@ -9,9 +9,11 @@ import (
 )
 
 type Job struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-	Url  string `json:"url"`
+	Id         string   `json:"id"`
+	Name       string   `json:"name"`
+	Url        string   `json:"url"`
+	ImageName  string   `json:"imageName"`
+	Parameters []string `json:"parameters"`
 }
 
 func (j *Job) GenerateId() error {
@@ -25,7 +27,7 @@ func (j *Job) GenerateId() error {
 }
 
 func (j *Job) IsValid() bool {
-	if j.Name == "" || j.Url == "" {
+	if j.Name == "" || j.Url == "" || j.ImageName == "" {
 		return false
 	}
 	return true
