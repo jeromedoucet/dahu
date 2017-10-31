@@ -126,7 +126,23 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 }
 
 func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {
-	panic("not implemented")
+	var job model.Job
+	err := i.doViewAction(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("jobs"))
+		if b == nil {
+			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
+		}
+		data := b.Get(id)
+		mErr := json.Unmarshal(data, &job)
+		return mErr
+	})
+	// if there is an error don't return the
+	// job. This error must not be ignored
+	if err == nil {
+		return &job, nil
+	} else {
+		return nil, err
+	}
 }
 
 func (i *inMemory) GetUser(id []byte, ctx context.Context) (*model.User, error) {

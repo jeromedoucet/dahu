@@ -71,6 +71,58 @@ func TestCreateJobShouldReturnAnErrorWhenNoBucket(t *testing.T) {
 	}
 }
 
+// test the nominal case of #GetJob
+func TestGetJobShouldReturnTheJobWhenItExists(t *testing.T) {
+	// given
+	j := model.Job{Name: "test"}
+	j.GenerateId()
+	c := configuration.InitConf()
+
+	ctx := context.Background()
+	tests.InsertObject(c, []byte("jobs"), []byte(j.Id), j)
+	rep := persistence.GetRepository(c)
+
+	// when
+	actualJob, err := rep.GetJob([]byte(j.Id), ctx)
+
+	// close and remove the db
+	tests.CleanPersistence(c)
+
+	// then
+	if err != nil {
+		t.Errorf("expect to have no error when finding existing job, but got %s", err.Error())
+	}
+	if actualJob.Id != j.Id || actualJob.Name != j.Name {
+		t.Errorf("expect to get user %s but got %s", j.String(), actualJob.String())
+	}
+}
+
+// test the nominal case of #GetJob
+func TestGetJobShouldReturnAnErrorWhenItDoesntExists(t *testing.T) {
+	// given
+	j := model.Job{Name: "test"}
+	j.GenerateId()
+	c := configuration.InitConf()
+
+	ctx := context.Background()
+	tests.InsertObject(c, []byte("jobs"), []byte(j.Id), j)
+	rep := persistence.GetRepository(c)
+
+	// when
+	actualJob, err := rep.GetJob([]byte("test2"), ctx)
+
+	// close and remove the db
+	tests.CleanPersistence(c)
+
+	// then
+	if err == nil {
+		t.Error("expect to have an error when searching non-existing job, but got nil")
+	}
+	if actualJob != nil {
+		t.Errorf("expect to get nil but got %s", actualJob.String())
+	}
+}
+
 // test the nominal case of #GetUser
 func TestGetUserShouldReturnTheUserWhenItExists(t *testing.T) {
 	// given
