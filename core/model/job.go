@@ -8,12 +8,19 @@ import (
 	"time"
 )
 
+// Configuration detail of
+// a Job
+type JobConfiguration struct {
+	NbRunBackup int `json:"nbRunBackup"` // the number of Run result that are kept
+}
+
 type Job struct {
-	Id         string   `json:"id"`
-	Name       string   `json:"name"`
-	Url        string   `json:"url"`
-	ImageName  string   `json:"imageName"`
-	Parameters []string `json:"parameters"`
+	Id        string            `json:"id"`
+	Name      string            `json:"name"`
+	Url       string            `json:"url"`
+	ImageName string            `json:"imageName"`
+	EnvParam  map[string]string `json:"parameters"`
+	Config    JobConfiguration
 }
 
 func (j *Job) GenerateId() error {

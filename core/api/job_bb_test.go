@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -305,6 +306,58 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	}
 }
 
+func TestRunAJob(t *testing.T) {
+	// given
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/job-test"}
+	job.EnvParam = make(map[string]string)
+	job.EnvParam["STATUS"] = "success"
+	job.GenerateId()
+	tests.InsertObject(conf, []byte("jobs"), []byte(job.Id), job)
+	a := api.InitRoute(conf)
+
+	// ap start
+	s := httptest.NewServer(a.Handler())
+
+	// request setup
+	trig := model.Trigger{}
+	body, _ := json.Marshal(trig)
+	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req := buildJobTrigReq(body, tokenStr, s.URL, job.Id)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+	// shutdown server and db gracefully
+	s.Close()
+	a.Close()
+	os.Remove(conf.PersistenceConf.Name)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("Expect 200 return code when trying to strigger a Run. "+
+			"Got %d", resp.StatusCode)
+	}
+	var res model.TriggerResponse
+	dec := json.NewDecoder(resp.Body)
+	dec.Decode(&res)
+	tests.RemoveContainer(res.ContainerName)
+}
+
+// todo test no job id on run
+// todo test async with ws
+// todo run status endpoint
+// todo test fail when trigger already has an Id
+// return an error when channel is closed
+// todo test that a Run is registered into the base
+
 func getToken(secret string, exp time.Time) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"exp": exp.Unix(),
@@ -316,6 +369,13 @@ func getToken(secret string, exp time.Time) string {
 func buildJobsPostReq(body []byte, token string, addr string) *http.Request {
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/jobs",
 		addr), bytes.NewBuffer(body))
+	req.Header.Add("Authorization", "Bearer "+token)
+	return req
+}
+
+func buildJobTrigReq(body []byte, token, addr, jobId string) *http.Request {
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/jobs/%s/trigger",
+		addr, jobId), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+token)
 	return req
 }

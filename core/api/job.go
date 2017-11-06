@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/jeromedoucet/dahu/core/model"
+	"github.com/jeromedoucet/route"
 )
 
 // handle request on jobs/
@@ -44,4 +45,17 @@ func (a *Api) handleJobs(ctx context.Context, w http.ResponseWriter, r *http.Req
 		log.Printf("WARN >> handleJobs encounter error : %s ", err.Error())
 		w.WriteHeader(http.StatusUnauthorized)
 	}
+}
+
+// handle requests on jobs/{jobId}/
+func (a *Api) handleJob(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// todo handle panic
+	jobId := route.SplitPath(r.URL.Path)[1]
+	j, _ := a.repository.GetJob([]byte(jobId), ctx) // todo handle error
+	res, _ := a.runEngine.StartOneRun(j, ctx)       // todo handle error
+	body, _ := json.Marshal(res)                    // todo handle err
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "%s", body)
+	w.Write(body)
 }
