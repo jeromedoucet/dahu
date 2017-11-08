@@ -324,8 +324,8 @@ func TestRunAJob(t *testing.T) {
 	s := httptest.NewServer(a.Handler())
 
 	// request setup
-	trig := model.Trigger{}
-	body, _ := json.Marshal(trig)
+	reqBody := model.RunRequest{}
+	body, _ := json.Marshal(reqBody)
 	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobTrigReq(body, tokenStr, s.URL, job.Id)
 	cli := &http.Client{}
@@ -345,7 +345,7 @@ func TestRunAJob(t *testing.T) {
 		t.Fatalf("Expect 200 return code when trying to strigger a Run. "+
 			"Got %d", resp.StatusCode)
 	}
-	var res model.TriggerResponse
+	var res model.JobRun
 	dec := json.NewDecoder(resp.Body)
 	dec.Decode(&res)
 	tests.RemoveContainer(res.ContainerName)

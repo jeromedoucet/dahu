@@ -2,11 +2,11 @@ package model
 
 // use by request that
 // will start a job run.
-type Trigger struct {
+type RunRequest struct {
 	OpenWs bool `json:"openWs"`
 }
 
-type TriggerResponse struct {
+type JobRun struct {
 	RunId         string `json:"runId"`
 	ContainerName string `json:"containerName"`
 }
