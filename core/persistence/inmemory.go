@@ -112,8 +112,8 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 		if updateErr != nil {
 			return updateErr
 		}
-		b.Put([]byte(job.Name), data)
-		return nil
+		updateErr = b.Put([]byte(job.Name), data) // fixme todo change with Id !
+		return updateErr
 	})
 	// if there is an error don't return the
 	// job. This error must not be ignored
@@ -123,6 +123,39 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 		return nil, err
 	}
 
+}
+
+func (i *inMemory) CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.Context) (*model.JobRun, error) {
+	err := i.doUpdateAction(func(tx *bolt.Tx) error {
+		var updateErr error
+		b := tx.Bucket([]byte("jobs"))
+		if b == nil {
+			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
+		}
+		var job model.Job
+		jobData := b.Get(jobId)
+		updateErr = json.Unmarshal(jobData, &job) // todo handle this error
+		// prepare & serialize the data
+		updateErr = jobRun.GenerateId()
+		if updateErr != nil {
+			return updateErr
+		}
+		job.AppendJobRun(jobRun)
+		var data []byte
+		data, updateErr = json.Marshal(job)
+		if updateErr != nil {
+			return updateErr
+		}
+		updateErr = b.Put(jobId, data) // todo handle the error
+		return updateErr
+	})
+	// if there is an error don't return the
+	// job. This error must not be ignored
+	if err == nil {
+		return jobRun, nil
+	} else {
+		return nil, err
+	}
 }
 
 func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {

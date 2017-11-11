@@ -2,7 +2,9 @@ package persistence_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/jeromedoucet/dahu/configuration"
 	"github.com/jeromedoucet/dahu/core/model"
@@ -203,3 +205,38 @@ func TestGetUserShouldReturnAnErrorWhenNoBucket(t *testing.T) {
 		t.Errorf("expect to get nil but got %s", actualUser.String())
 	}
 }
+
+// test the nominal case of #CreateJobRun
+func TestCreateJobRunShouldUpdateAJob(t *testing.T) {
+	// given
+	j := model.Job{Name: "test"}
+	j.GenerateId()
+	jr := model.JobRun{ContainerName: "test", Status: model.RUNNING, StartTime: time.Now()}
+	c := configuration.InitConf()
+
+	ctx := context.Background()
+	tests.InsertObject(c, []byte("jobs"), []byte(j.Id), j)
+	rep := persistence.GetRepository(c)
+
+	// when
+	actualJobRun, err := rep.CreateJobRun(&jr, []byte(j.Id), ctx)
+
+	job, _ := rep.GetJob([]byte(j.Id), ctx)
+	// close and remove the db
+	tests.CleanPersistence(c)
+
+	// then
+	if err != nil {
+		t.Errorf("expect to have no error when creating a jobRun on an existing Job, but got %s", err.Error())
+	}
+	if string(actualJobRun.Id) == "" {
+		t.Error("expect the new jobRun to have an id, but is empty.")
+	}
+	fmt.Printf("%+v", job.JobRuns)
+	if string(job.JobRuns[0].Id) != string(actualJobRun.Id) {
+		t.Errorf("expect the jobRun to be the first on the Job but got %+v", job.JobRuns[0])
+	}
+}
+
+// todo test no existing job
+// todo test id already exist

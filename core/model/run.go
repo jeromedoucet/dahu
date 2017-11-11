@@ -86,6 +86,7 @@ type Run struct {
 // this function is thread-safe and
 // non blocking.
 func (r *Run) Start(ctx context.Context) error {
+	// todo return JobRun ?
 	r.m.Lock()
 	defer r.m.Unlock()
 	if r.status == CREATED {
