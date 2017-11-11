@@ -112,7 +112,7 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 		if updateErr != nil {
 			return updateErr
 		}
-		updateErr = b.Put([]byte(job.Name), data) // fixme todo change with Id !
+		updateErr = b.Put(job.Id, data)
 		return updateErr
 	})
 	// if there is an error don't return the

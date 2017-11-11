@@ -94,7 +94,7 @@ func TestGetJobShouldReturnTheJobWhenItExists(t *testing.T) {
 	if err != nil {
 		t.Errorf("expect to have no error when finding existing job, but got %s", err.Error())
 	}
-	if actualJob.Id != j.Id || actualJob.Name != j.Name {
+	if string(actualJob.Id) != string(j.Id) || actualJob.Name != j.Name {
 		t.Errorf("expect to get user %s but got %s", j.String(), actualJob.String())
 	}
 }

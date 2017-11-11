@@ -327,7 +327,7 @@ func TestRunAJob(t *testing.T) {
 	reqBody := model.RunRequest{}
 	body, _ := json.Marshal(reqBody)
 	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req := buildJobTrigReq(body, tokenStr, s.URL, job.Id)
+	req := buildJobTrigReq(body, tokenStr, s.URL, string(job.Id))
 	cli := &http.Client{}
 
 	// when

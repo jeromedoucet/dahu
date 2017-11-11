@@ -27,10 +27,9 @@ type JobRun struct {
 // generate an Id for the JobRun.
 // if it already exist, return an error
 func (j *JobRun) GenerateId() error {
-	id := string(j.Id)
-	err := generateId(&id)
+	id, err := generateId(j.Id)
 	if err == nil {
-		j.Id = []byte(id)
+		j.Id = id
 	}
 	return err
 }
@@ -42,7 +41,7 @@ type JobConfiguration struct {
 }
 
 type Job struct {
-	Id        string            `json:"id"` // todo change it into a []byte
+	Id        []byte            `json:"id"` // todo change it into a []byte
 	Name      string            `json:"name"`
 	Url       string            `json:"url"`
 	ImageName string            `json:"imageName"`
@@ -66,7 +65,11 @@ func (j *Job) AppendJobRun(jobRun *JobRun) {
 }
 
 func (j *Job) GenerateId() error {
-	return generateId(&j.Id)
+	id, err := generateId(j.Id)
+	if err == nil {
+		j.Id = id
+	}
+	return err
 }
 
 func (j *Job) IsValid() bool {
@@ -80,11 +83,10 @@ func (j *Job) String() string {
 	return fmt.Sprintf("{Id:%s, Name:%s, Url:%s}", j.Id, j.Name, j.Url)
 }
 
-func generateId(id *string) error {
-	if *id != "" {
-		return errors.New(fmt.Sprintf("the id %+v already defined", *id))
+func generateId(id []byte) ([]byte, error) {
+	if id != nil && string(id) != "" {
+		return nil, errors.New(fmt.Sprintf("the id %+v already defined", string(id)))
 	}
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	*id = strconv.Itoa(r.Int())
-	return nil
+	return []byte(strconv.Itoa(r.Int())), nil
 }
