@@ -16,6 +16,8 @@ var singletonMutex = &sync.Mutex{}
 
 var inMemorySingleton *inMemory
 
+// return the inMemory singleton instance.
+// create it if necessary
 func getOrCreateInMemory(conf *configuration.Conf) Repository {
 	// we may not use Once sync structure because the singleton
 	// may be deleted and then recreated.
@@ -63,7 +65,6 @@ func createInMemory(conf *configuration.Conf) {
 		inMemorySingleton.rwMutex.Lock()
 		defer inMemorySingleton.rwMutex.Unlock()
 		inMemorySingleton.db.Close() // todo handle this error
-		// reset the singleton
 		inMemorySingleton = nil
 	}()
 }
@@ -88,7 +89,6 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 		if b == nil {
 			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
 		}
-		// prepare & serialize the data
 		updateErr = job.GenerateId()
 		if updateErr != nil {
 			return updateErr
@@ -101,8 +101,6 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 		updateErr = b.Put(job.Id, data)
 		return updateErr
 	})
-	// if there is an error don't return the
-	// job. This error must not be ignored
 	if err == nil {
 		return job, nil
 	} else {
@@ -121,7 +119,6 @@ func (i *inMemory) CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.
 		var job model.Job
 		jobData := b.Get(jobId)
 		updateErr = json.Unmarshal(jobData, &job) // todo handle this error
-		// prepare & serialize the data
 		updateErr = jobRun.GenerateId()
 		if updateErr != nil {
 			return updateErr
@@ -135,8 +132,6 @@ func (i *inMemory) CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.
 		updateErr = b.Put(jobId, data) // todo handle the error
 		return updateErr
 	})
-	// if there is an error don't return the
-	// job. This error must not be ignored
 	if err == nil {
 		return jobRun, nil
 	} else {
@@ -155,8 +150,6 @@ func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {
 		mErr := json.Unmarshal(data, &job)
 		return mErr
 	})
-	// if there is an error don't return the
-	// job. This error must not be ignored
 	if err == nil {
 		return &job, nil
 	} else {
@@ -175,8 +168,6 @@ func (i *inMemory) GetUser(id []byte, ctx context.Context) (*model.User, error) 
 		mErr := json.Unmarshal(data, &user)
 		return mErr
 	})
-	// if there is an error don't return the
-	// job. This error must not be ignored
 	if err == nil {
 		return &user, nil
 	} else {
