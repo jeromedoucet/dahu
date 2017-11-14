@@ -34,6 +34,14 @@ func (j *JobRun) GenerateId() error {
 	return err
 }
 
+// return true if the JobRun instance
+// has enought information to be registered
+// it should have a non nil ContainerName and
+// a RunStatus
+func (j *JobRun) IsValid() bool {
+	return j.ContainerName != "" && isAvailableRunStatus(j.Status)
+}
+
 // Configuration detail of
 // a Job
 type JobConfiguration struct {
@@ -41,7 +49,7 @@ type JobConfiguration struct {
 }
 
 type Job struct {
-	Id        []byte            `json:"id"` // todo change it into a []byte
+	Id        []byte            `json:"id"`
 	Name      string            `json:"name"`
 	Url       string            `json:"url"`
 	ImageName string            `json:"imageName"`

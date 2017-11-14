@@ -6,12 +6,43 @@ import (
 	"github.com/jeromedoucet/dahu/core/model"
 )
 
-func TestIsValidJobRunWithoutContainerName(t *testing.T) {
+func TestIsValidJobRunReturnTrue(t *testing.T) {
 	// given
-	//jr := model.JobRun{Status: model.CREATED}
+	jr := model.JobRun{Status: model.CREATED, ContainerName: "test"}
 
 	// when
+	res := jr.IsValid()
 
+	// then
+	if !res {
+		t.Error("expect a RunStatus without issue to be valid but is invalid")
+	}
+}
+
+func TestIsValidJobRunWithoutContainerName(t *testing.T) {
+	// given
+	jr := model.JobRun{Status: model.CREATED}
+
+	// when
+	res := jr.IsValid()
+
+	// then
+	if res {
+		t.Error("expect a RunStatus without ContainerName to be invalid but is valid")
+	}
+}
+
+func TestIsValidJobRunWithoutStatus(t *testing.T) {
+	// given
+	jr := model.JobRun{ContainerName: "test"}
+
+	// when
+	res := jr.IsValid()
+
+	// then
+	if res {
+		t.Error("expect a RunStatus without status to be invalid but is valid")
+	}
 }
 
 func TestAppendJobRunShouldRollJobRun(t *testing.T) {

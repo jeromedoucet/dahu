@@ -26,6 +26,10 @@ const (
 	FAILURE
 )
 
+func isAvailableRunStatus(s RunStatus) bool {
+	return !(s < CREATED || s > FAILURE)
+}
+
 // run params
 type RunParams struct {
 	Id           string

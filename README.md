@@ -13,4 +13,3 @@ Dahu is a simple continuous integration plateform with the following goals:
  - API friendly.
  - SCM trigger (webhook) are include
  - no surprise on behavior
-
