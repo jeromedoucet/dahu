@@ -84,6 +84,7 @@ func (i *inMemory) WaitClose() {
 
 func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, error) {
 	err := i.doUpdateAction(func(tx *bolt.Tx) error {
+		// todo check that job is non-nil
 		var updateErr error
 		b := tx.Bucket([]byte("jobs"))
 		if b == nil {
@@ -112,6 +113,9 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 func (i *inMemory) CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.Context) (*model.JobRun, error) {
 	err := i.doUpdateAction(func(tx *bolt.Tx) error {
 		var updateErr error
+		if jobRun == nil || !jobRun.IsValid() {
+			return errors.New(fmt.Sprintf("persistence >> trying to insert a nil or a an invalid JobRun : %+v", jobRun))
+		}
 		b := tx.Bucket([]byte("jobs"))
 		if b == nil {
 			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")

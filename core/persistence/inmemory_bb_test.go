@@ -2,7 +2,6 @@ package persistence_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -232,9 +231,39 @@ func TestCreateJobRunShouldUpdateAJob(t *testing.T) {
 	if string(actualJobRun.Id) == "" {
 		t.Error("expect the new jobRun to have an id, but is empty.")
 	}
-	fmt.Printf("%+v", job.JobRuns)
 	if string(job.JobRuns[0].Id) != string(actualJobRun.Id) {
 		t.Errorf("expect the jobRun to be the first on the Job but got %+v", job.JobRuns[0])
+	}
+}
+
+// test #CreateJobRun when JobRun is invalid
+func TestCreateJobRunShouldFailIfJobRunInvalid(t *testing.T) {
+	// given
+	j := model.Job{Name: "test"}
+	j.GenerateId()
+	jr := model.JobRun{Status: model.RUNNING, StartTime: time.Now()}
+	c := configuration.InitConf()
+
+	ctx := context.Background()
+	tests.InsertObject(c, []byte("jobs"), []byte(j.Id), j)
+	rep := persistence.GetRepository(c)
+
+	// when
+	actualJobRun, err := rep.CreateJobRun(&jr, []byte(j.Id), ctx)
+
+	job, _ := rep.GetJob([]byte(j.Id), ctx)
+	// close and remove the db
+	tests.CleanPersistence(c)
+
+	// then
+	if err == nil {
+		t.Fatal("expect to have error when trying to create an invalid jobRun , but got nil")
+	}
+	if actualJobRun != nil {
+		t.Fatalf("expect the new jobRun to be nil, but go %+v", actualJobRun)
+	}
+	if len(job.JobRuns) != 0 {
+		t.Errorf("expect the jobRuns to be empty but got %+v", job.JobRuns[0])
 	}
 }
 
