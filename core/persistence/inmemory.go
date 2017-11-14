@@ -12,14 +12,6 @@ import (
 	"github.com/jeromedoucet/dahu/core/model"
 )
 
-// used when stopping the db.
-// it allow to wait for all transaction
-// to be finished
-var wgTransaction = &sync.WaitGroup{}
-
-// this sync is used to ensure that only
-// on instance of inMemory exist
-// at a given moment.
 var singletonMutex = &sync.Mutex{}
 
 var inMemorySingleton *inMemory
@@ -38,11 +30,11 @@ func getOrCreateInMemory(conf *configuration.Conf) Repository {
 	return inMemorySingleton
 }
 
+// prepare a db inMemory instance
 func createInMemory(conf *configuration.Conf) {
 	inMemorySingleton = new(inMemory)
 	inMemorySingleton.conf = conf
-	inMemorySingleton.rwMutex = &sync.Mutex{}
-	inMemorySingleton.waitClose = &sync.WaitGroup{}
+	inMemorySingleton.rwMutex = &sync.RWMutex{}
 	db, _ := bolt.Open(conf.PersistenceConf.Name, 0600, nil) // todo handle this error
 	db.Update(func(tx *bolt.Tx) error {
 		var err error
@@ -60,21 +52,16 @@ func createInMemory(conf *configuration.Conf) {
 		return nil
 	})
 	inMemorySingleton.db = db
-	// start lock for WaitClose func
-	inMemorySingleton.waitClose.Add(1)
 	go func() {
-		// release lock for WaitClose func
-		defer inMemorySingleton.waitClose.Done()
-		// wait for the closing signal to be throw
 		<-inMemorySingleton.conf.Close
 		// when closing, the first thing
 		// is to avoid any new call on #getOrCreateInMemory
 		singletonMutex.Lock()
 		defer singletonMutex.Unlock()
-		// according to bbolt documentation
-		// all transactions must be closed
-		// before closing the db
-		wgTransaction.Wait()
+		// take a write lock. It permit to wait that all current
+		// transaction finished
+		inMemorySingleton.rwMutex.Lock()
+		defer inMemorySingleton.rwMutex.Unlock()
 		inMemorySingleton.db.Close() // todo handle this error
 		// reset the singleton
 		inMemorySingleton = nil
@@ -85,14 +72,13 @@ func createInMemory(conf *configuration.Conf) {
 // of persistence.Repository.
 // Use bbold as embedded db.
 type inMemory struct {
-	conf      *configuration.Conf
-	db        *bolt.DB
-	rwMutex   *sync.Mutex
-	waitClose *sync.WaitGroup
+	conf    *configuration.Conf
+	db      *bolt.DB
+	rwMutex *sync.RWMutex
 }
 
 func (i *inMemory) WaitClose() {
-	i.waitClose.Wait()
+	<-i.conf.Close
 }
 
 func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, error) {
@@ -203,18 +189,13 @@ func (i *inMemory) GetUser(id []byte, ctx context.Context) (*model.User, error) 
 // inside a read/write transaction. An error is returned
 // if an issue appears.
 func (i *inMemory) doUpdateAction(action func(tx *bolt.Tx) error) error {
-	// this increments will avoid
-	// closing database while a transaction
-	// is open
-	wgTransaction.Add(1)
-	defer wgTransaction.Done()
+	i.rwMutex.Lock()
+	defer i.rwMutex.Unlock()
 	select {
 	case <-i.conf.Close:
 		return errors.New("persistence >> the database is close or closing. Operation impossible.")
 	default:
 		// only one read/write transaction is allowed.
-		i.rwMutex.Lock()
-		defer i.rwMutex.Unlock()
 		return i.db.Update(action)
 	}
 
@@ -225,11 +206,8 @@ func (i *inMemory) doUpdateAction(action func(tx *bolt.Tx) error) error {
 // inside a read transaction. An error is returned
 // if an issue appears.
 func (i *inMemory) doViewAction(action func(tx *bolt.Tx) error) error {
-	// this increments will avoid
-	// closing database while a transaction
-	// is open
-	wgTransaction.Add(1)
-	defer wgTransaction.Done()
+	i.rwMutex.RLock()
+	defer i.rwMutex.RUnlock()
 	select {
 	case <-i.conf.Close:
 		return errors.New("persistence >> the database is close or closing. Operation impossible.")

@@ -50,18 +50,23 @@ type Job struct {
 	Config    JobConfiguration
 }
 
-// todo test me please
+// Append with rolling policy a
+// JobRun on this Job
+// If nil slice, create a slice
+// on 5 size
 func (j *Job) AppendJobRun(jobRun *JobRun) {
 	if j.JobRuns == nil {
-		// todo set this default value in another place
 		jobRunsSize := j.Config.NbRunBackup
 		if jobRunsSize < 1 {
 			jobRunsSize = 5
 		}
 		j.JobRuns = make([]*JobRun, jobRunsSize)
 	}
-	// todo implements the rolling mecanism
-	j.JobRuns[0] = jobRun
+	rollingJr := jobRun
+	for i, v := range j.JobRuns {
+		j.JobRuns[i] = rollingJr
+		rollingJr = v
+	}
 }
 
 func (j *Job) GenerateId() error {
