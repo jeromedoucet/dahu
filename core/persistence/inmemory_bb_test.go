@@ -267,5 +267,29 @@ func TestCreateJobRunShouldFailIfJobRunInvalid(t *testing.T) {
 	}
 }
 
-// todo test no existing job
+// test #CreateJobRun when JobRun is invalid
+func TestCreateJobRunShouldFailIfNoJob(t *testing.T) {
+	// given
+	j := model.Job{Name: "test"}
+	j.GenerateId()
+	jr := model.JobRun{Status: model.RUNNING, StartTime: time.Now()}
+	c := configuration.InitConf()
+
+	ctx := context.Background()
+	rep := persistence.GetRepository(c)
+
+	// when
+	actualJobRun, err := rep.CreateJobRun(&jr, []byte(j.Id), ctx)
+
+	// close and remove the db
+	tests.CleanPersistence(c)
+
+	// then
+	if err == nil {
+		t.Fatal("expect to have error when trying to create a jobRun on a non existing Job, but got nil")
+	}
+	if actualJobRun != nil {
+		t.Fatalf("expect the new jobRun to be nil, but go %+v", actualJobRun)
+	}
+}
 // todo test id already exist
