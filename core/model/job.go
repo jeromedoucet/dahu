@@ -3,7 +3,9 @@ package model
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
+	"os/exec"
 	"strconv"
 	"time"
 )
@@ -74,6 +76,17 @@ func (j *Job) AppendJobRun(jobRun *JobRun) {
 	for i, v := range j.JobRuns {
 		j.JobRuns[i] = rollingJr
 		rollingJr = v
+	}
+	// when a joRun is removed from a job
+	// the underlying container which does still
+	// exist to keep logs should now
+	// be remove.
+	if rollingJr != nil {
+		cmd := exec.Command("docker", "rm", "-f", rollingJr.ContainerName)
+		err := cmd.Run()
+		if err != nil {
+			log.Printf("WARN >> Encounter error when trying to remove container %s : %+v", rollingJr.ContainerName, err)
+		}
 	}
 }
 

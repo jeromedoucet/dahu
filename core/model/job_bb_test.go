@@ -1,6 +1,7 @@
 package model_test
 
 import (
+	"os/exec"
 	"testing"
 
 	"github.com/jeromedoucet/dahu/core/model"
@@ -45,14 +46,25 @@ func TestIsValidJobRunWithoutStatus(t *testing.T) {
 	}
 }
 
+// This is the test of the roll behavior of
+// jobRun inside the Job. The slice must not
+// grow and when appending a new JobRun,
+// the older are push to the end. Every time
+// it happen, the oldest is removed and the related container
+// is removed
 func TestAppendJobRunShouldRollJobRun(t *testing.T) {
 	// given
+
+	// run a docker container that should be removed
+	cmd := exec.Command("docker", "run", "--name", "dahu-test", "hello-world")
+	cmd.Run()
+
 	j := model.Job{JobRuns: []*model.JobRun{
 		&model.JobRun{Id: []byte("5")},
 		&model.JobRun{Id: []byte("4")},
 		&model.JobRun{Id: []byte("3")},
 		&model.JobRun{Id: []byte("2")},
-		&model.JobRun{Id: []byte("1")},
+		&model.JobRun{Id: []byte("1"), ContainerName: "dahu-test"},
 	}}
 	jr := model.JobRun{Id: []byte("6")}
 
@@ -75,8 +87,18 @@ func TestAppendJobRunShouldRollJobRun(t *testing.T) {
 	if string(j.JobRuns[4].Id) != "2" {
 		t.Error("expect the last JobRun to be 2")
 	}
+
+	// check the docker container is removed
+	cmd = exec.Command("docker", "rm", "-f", "dahu-test")
+	err := cmd.Run()
+	if err == nil {
+		t.Error("expect the container to be removed but it was not")
+	}
 }
 
+// this test will ensure that #AppendJobRun behavior
+// is correct even when the inner slice is not
+// initiate
 func TestAppendJobRunShouldCreateTheSliceWhenNil(t *testing.T) {
 	// given
 	j := model.Job{}
