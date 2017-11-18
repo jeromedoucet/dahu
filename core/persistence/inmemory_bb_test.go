@@ -210,7 +210,8 @@ func TestCreateJobRunShouldUpdateAJob(t *testing.T) {
 	// given
 	j := model.Job{Name: "test"}
 	j.GenerateId()
-	jr := model.JobRun{ContainerName: "test", Status: model.RUNNING, StartTime: time.Now()}
+	now := time.Now()
+	jr := model.JobRun{ContainerName: "test", Status: model.RUNNING, StartTime: &now}
 	c := configuration.InitConf()
 
 	ctx := context.Background()
@@ -241,7 +242,8 @@ func TestCreateJobRunShouldFailIfJobRunInvalid(t *testing.T) {
 	// given
 	j := model.Job{Name: "test"}
 	j.GenerateId()
-	jr := model.JobRun{Status: model.RUNNING, StartTime: time.Now()}
+	now := time.Now()
+	jr := model.JobRun{Status: model.RUNNING, StartTime: &now}
 	c := configuration.InitConf()
 
 	ctx := context.Background()
@@ -272,7 +274,8 @@ func TestCreateJobRunShouldFailIfNoJob(t *testing.T) {
 	// given
 	j := model.Job{Name: "test"}
 	j.GenerateId()
-	jr := model.JobRun{Status: model.RUNNING, StartTime: time.Now()}
+	now := time.Now()
+	jr := model.JobRun{Status: model.RUNNING, StartTime: &now}
 	c := configuration.InitConf()
 
 	ctx := context.Background()
@@ -292,4 +295,5 @@ func TestCreateJobRunShouldFailIfNoJob(t *testing.T) {
 		t.Fatalf("expect the new jobRun to be nil, but go %+v", actualJobRun)
 	}
 }
+
 // todo test id already exist

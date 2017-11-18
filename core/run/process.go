@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jeromedoucet/dahu/core/model"
+	"github.com/jeromedoucet/dahu/core/persistence"
 )
 
 // default command timeout. It is used
@@ -18,12 +19,14 @@ import (
 const defaultTimeOut time.Duration = time.Hour * 2
 
 // run params
+// todo make the contrat more clear. Throught a New function for instance
 type ProcessParams struct {
 	Id           string
 	Image        string
 	Env          map[string]string
 	OutputWriter io.Writer
 	TimeOut      time.Duration
+	JobId        []byte
 }
 
 func (p *ProcessParams) ContainerName() string {
@@ -75,7 +78,7 @@ type Process struct {
 // value than CREATED.
 // this function is thread-safe and
 // non blocking.
-func (r *Process) Start(ctx context.Context) error {
+func (r *Process) Start(ctx context.Context, repository persistence.Repository) (*model.JobRun, error) {
 	// todo return JobRun ?
 	r.m.Lock()
 	defer r.m.Unlock()
@@ -93,8 +96,11 @@ func (r *Process) Start(ctx context.Context) error {
 		r.cmd.Stderr = r.params.OutputWriter
 
 		log.Printf("INFO >> run now the command : %+v", r.cmd.Args)
+		now := time.Now()
 		r.cmd.Start()
 		r.status = model.RUNNING
+		jobRun := model.JobRun{ContainerName: r.params.ContainerName(), Status: r.status, StartTime: &now}
+		res, _ := repository.CreateJobRun(&jobRun, r.params.JobId, ctx) // todo handle the error correctly
 		go func() {
 			defer close(r.done)
 			err := r.cmd.Wait() // todo handle error here
@@ -111,11 +117,11 @@ func (r *Process) Start(ctx context.Context) error {
 				}
 			}
 		}()
-		return nil
+		return res, nil
 	} else {
 		msg := "ERROR >> model.Run.Start try to Start a Run more than one time"
 		log.Print(msg)
-		return errors.New(msg)
+		return nil, errors.New(msg)
 	}
 }
 

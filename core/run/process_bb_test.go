@@ -7,9 +7,18 @@ import (
 	"time"
 
 	"github.com/jeromedoucet/dahu/core/model"
+	"github.com/jeromedoucet/dahu/core/persistence"
 	"github.com/jeromedoucet/dahu/core/run"
 	"github.com/jeromedoucet/dahu/tests"
 )
+
+type mockRepository struct {
+	persistence.Repository
+}
+
+func (m *mockRepository) CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.Context) (*model.JobRun, error) {
+	return nil, nil
+}
 
 // test the behavior of the run module when
 // executing a Job with a failure result.
@@ -31,7 +40,7 @@ func TestProcessStartWithFailure(t *testing.T) {
 	r := run.NewProcess(params)
 
 	// when
-	r.Start(context.Background())
+	r.Start(context.Background(), new(mockRepository))
 
 	<-r.Done()
 	// then
@@ -61,7 +70,7 @@ func TestProcessStartWithTimeOut(t *testing.T) {
 	r := run.NewProcess(params)
 
 	// when
-	r.Start(context.Background())
+	r.Start(context.Background(), new(mockRepository))
 
 	<-r.Done()
 	// then
@@ -91,7 +100,7 @@ func TestProcessStartWithSuccess(t *testing.T) {
 	r := run.NewProcess(params)
 
 	// when
-	r.Start(context.Background())
+	r.Start(context.Background(), new(mockRepository))
 
 	<-r.Done()
 	// then
@@ -121,8 +130,8 @@ func TestProcessStartTwiceShouldReturnError(t *testing.T) {
 	r := run.NewProcess(params)
 
 	// when
-	err1 := r.Start(context.Background())
-	err2 := r.Start(context.Background())
+	_, err1 := r.Start(context.Background(), new(mockRepository))
+	_, err2 := r.Start(context.Background(), new(mockRepository))
 
 	<-r.Done()
 	// then
@@ -157,7 +166,7 @@ func TestProcessStartWithCancelation(t *testing.T) {
 	r := run.NewProcess(params)
 
 	// when
-	err := r.Start(context.Background())
+	_, err := r.Start(context.Background(), new(mockRepository))
 	r.Cancel()
 
 	<-r.Done()
@@ -213,7 +222,7 @@ func TestProcessCancelationShouldFailWhenFinished(t *testing.T) {
 	r := run.NewProcess(params)
 
 	// when
-	r.Start(context.Background())
+	r.Start(context.Background(), new(mockRepository))
 	<-r.Done()
 	err := r.Cancel()
 

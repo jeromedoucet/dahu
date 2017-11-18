@@ -349,6 +349,18 @@ func TestRunAJob(t *testing.T) {
 	dec := json.NewDecoder(resp.Body)
 	dec.Decode(&res)
 	tests.RemoveContainer(res.ContainerName)
+	if res.ContainerName == "" {
+		t.Fatal("expect to have an container name but got ''")
+	}
+	if res.Status != model.RUNNING {
+		t.Fatalf("exepct the JobRun status to be %d, but got %d", model.RUNNING, res.Status)
+	}
+	if len(res.Id) == 0 {
+		t.Fatal("expect to have an id but got ''")
+	}
+	if res.StartTime == nil {
+		t.Fatal("expect to have a start time, but got nil")
+	}
 }
 
 // todo test no job id on run

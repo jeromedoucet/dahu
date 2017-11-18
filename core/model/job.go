@@ -34,11 +34,11 @@ type RunRequest struct {
 // A job run store informations on a run
 // for a given Job
 type JobRun struct {
-	Id            []byte    `json:"id"`
-	ContainerName string    `json:"containerName"`
-	Status        RunStatus `json: "runStatus"`
-	StartTime     time.Time `json: "startTime"`
-	EndTime       time.Time `json:"endTime"`
+	Id            []byte     `json:"id"`
+	ContainerName string     `json:"containerName"`
+	Status        RunStatus  `json:"runStatus"`
+	StartTime     *time.Time `json:"startTime"`
+	EndTime       *time.Time `json:"endTime"`
 }
 
 // generate an Id for the JobRun.
