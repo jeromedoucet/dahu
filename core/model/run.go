@@ -11,25 +11,6 @@ import (
 	"time"
 )
 
-type RunStatus int
-
-// default command timeout. It is used
-// when not override by RunParams
-const defaultTimeOut time.Duration = time.Hour * 2
-
-// available run status
-const (
-	CREATED RunStatus = 1 + iota
-	RUNNING
-	CANCELED
-	SUCCESS
-	FAILURE
-)
-
-func isAvailableRunStatus(s RunStatus) bool {
-	return !(s < CREATED || s > FAILURE)
-}
-
 // run params
 type RunParams struct {
 	Id           string
@@ -44,10 +25,10 @@ func (p *RunParams) ContainerName() string {
 }
 
 // initiate a new Run with given params
-func NewRun(p RunParams) *Run {
-	r := new(Run)
+func NewProcess(p RunParams) *Process {
+	r := new(Process)
 	r.params = p
-	r.cmdArg = formatRunParams(r.params)
+	r.cmdArg = formatProcessParams(r.params)
 	r.done = make(chan interface{})
 	r.m = &sync.Mutex{}
 	r.status = CREATED
@@ -57,7 +38,7 @@ func NewRun(p RunParams) *Run {
 // format a docker run command
 // with some constants ('run')
 // and thanks to run params (env and image name for instance).
-func formatRunParams(p RunParams) []string {
+func formatProcessParams(p RunParams) []string {
 	args := []string{"run", "--name", p.ContainerName()}
 	if len(p.Env) != 0 {
 		buf := make([]string, 0)
@@ -70,11 +51,10 @@ func formatRunParams(p RunParams) []string {
 	return append(args, p.Image)
 }
 
-// A Run of a job.
-// This run is 'single-shot'.
-// If a new Run is necessary, a new
-// one must be created (with NewRun())
-type Run struct {
+// A container process
+// for example, this could be a git clone,
+// a run of a test set or even a deployment
+type Process struct {
 	params RunParams
 	cmdArg []string
 	status RunStatus // must be accessed through thread-safe functions Status() and setStatus()
@@ -89,7 +69,7 @@ type Run struct {
 // value than CREATED.
 // this function is thread-safe and
 // non blocking.
-func (r *Run) Start(ctx context.Context) error {
+func (r *Process) Start(ctx context.Context) error {
 	// todo return JobRun ?
 	r.m.Lock()
 	defer r.m.Unlock()
@@ -136,7 +116,7 @@ func (r *Run) Start(ctx context.Context) error {
 // return the status of the
 // command. This function is
 // thread-safe.
-func (r *Run) Status() RunStatus {
+func (r *Process) Status() RunStatus {
 	r.m.Lock()
 	defer r.m.Unlock()
 	return r.status
@@ -150,7 +130,7 @@ func (r *Run) Status() RunStatus {
 // of the command.
 // It is usefull for some action that
 // must be done internally too.
-func (r *Run) setStatus(s RunStatus) {
+func (r *Process) setStatus(s RunStatus) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	r.status = s
@@ -161,7 +141,7 @@ func (r *Run) setStatus(s RunStatus) {
 // command has finished.
 // It is done when the return
 // channel is closed.
-func (r *Run) Done() chan interface{} {
+func (r *Process) Done() chan interface{} {
 	return r.done
 }
 
@@ -173,7 +153,7 @@ func (r *Run) Done() chan interface{} {
 // process termination encounter some issues.
 //
 // this function is thread-safe
-func (r *Run) Cancel() error {
+func (r *Process) Cancel() error {
 	r.m.Lock()
 	defer r.m.Unlock()
 	if r.status != RUNNING {

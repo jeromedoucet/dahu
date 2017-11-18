@@ -10,6 +10,25 @@ import (
 	"time"
 )
 
+type RunStatus int
+
+// default command timeout. It is used
+// when not override by RunParams
+const defaultTimeOut time.Duration = time.Hour * 2
+
+// available run status
+const (
+	CREATED RunStatus = 1 + iota
+	RUNNING
+	CANCELED
+	SUCCESS
+	FAILURE
+)
+
+func isAvailableRunStatus(s RunStatus) bool {
+	return !(s < CREATED || s > FAILURE)
+}
+
 // use by request that
 // will start a job run.
 type RunRequest struct {

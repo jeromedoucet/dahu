@@ -14,7 +14,7 @@ import (
 // executing a Job with a failure result.
 // We must check that the correct status
 // is return and all logs streamed
-func TestRunStartWithFailure(t *testing.T) {
+func TestProcessStartWithFailure(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
@@ -27,7 +27,7 @@ func TestRunStartWithFailure(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewRun(params)
+	r := model.NewProcess(params)
 
 	// when
 	r.Start(context.Background())
@@ -43,7 +43,7 @@ func TestRunStartWithFailure(t *testing.T) {
 }
 
 // test the cancelation after a given time out
-func TestRunStartWithTimeOut(t *testing.T) {
+func TestProcessStartWithTimeOut(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
@@ -57,7 +57,7 @@ func TestRunStartWithTimeOut(t *testing.T) {
 		TimeOut:      time.Second * 1,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewRun(params)
+	r := model.NewProcess(params)
 
 	// when
 	r.Start(context.Background())
@@ -74,7 +74,7 @@ func TestRunStartWithTimeOut(t *testing.T) {
 
 // test the behavior of the run module when
 // executing a Job with a success result.
-func TestRunStartWithSuccess(t *testing.T) {
+func TestProcessStartWithSuccess(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
@@ -87,7 +87,7 @@ func TestRunStartWithSuccess(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewRun(params)
+	r := model.NewProcess(params)
 
 	// when
 	r.Start(context.Background())
@@ -104,7 +104,7 @@ func TestRunStartWithSuccess(t *testing.T) {
 
 // test the behavior of the run module when
 // starting a Run twice.
-func TestRunStartTwiceShouldReturnError(t *testing.T) {
+func TestProcessStartTwiceShouldReturnError(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
@@ -117,7 +117,7 @@ func TestRunStartTwiceShouldReturnError(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewRun(params)
+	r := model.NewProcess(params)
 
 	// when
 	err1 := r.Start(context.Background())
@@ -140,7 +140,7 @@ func TestRunStartTwiceShouldReturnError(t *testing.T) {
 }
 
 // test a cancelation of a run
-func TestRunStartWithCancelation(t *testing.T) {
+func TestProcessStartWithCancelation(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
@@ -153,7 +153,7 @@ func TestRunStartWithCancelation(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewRun(params)
+	r := model.NewProcess(params)
 
 	// when
 	err := r.Start(context.Background())
@@ -171,7 +171,7 @@ func TestRunStartWithCancelation(t *testing.T) {
 
 // test that we can not cancel a run
 // before starting it
-func TestRunCancelationShouldFailWhenNotStarted(t *testing.T) {
+func TestProcessCancelationShouldFailWhenNotStarted(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
@@ -183,7 +183,7 @@ func TestRunCancelationShouldFailWhenNotStarted(t *testing.T) {
 		},
 		OutputWriter: buf,
 	}
-	r := model.NewRun(params)
+	r := model.NewProcess(params)
 
 	// when
 	err := r.Cancel()
@@ -195,7 +195,7 @@ func TestRunCancelationShouldFailWhenNotStarted(t *testing.T) {
 }
 
 // test that we can not cancel a run after it has finished
-func TestRunCancelationShouldFailWhenFinished(t *testing.T) {
+func TestProcessCancelationShouldFailWhenFinished(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
 	params := model.RunParams{
@@ -209,7 +209,7 @@ func TestRunCancelationShouldFailWhenFinished(t *testing.T) {
 	}
 
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewRun(params)
+	r := model.NewProcess(params)
 
 	// when
 	r.Start(context.Background())
