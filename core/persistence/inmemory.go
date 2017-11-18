@@ -40,7 +40,6 @@ func createInMemory(conf *configuration.Conf) {
 	db, _ := bolt.Open(conf.PersistenceConf.Name, 0600, nil) // todo handle this error
 	db.Update(func(tx *bolt.Tx) error {
 		var err error
-		fmt.Println("test")
 		_, err = tx.CreateBucketIfNotExists([]byte("jobs"))
 		if err != nil {
 			// todo test me
