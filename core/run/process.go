@@ -1,4 +1,4 @@
-package model
+package run
 
 import (
 	"context"
@@ -9,7 +9,13 @@ import (
 	"os/exec"
 	"sync"
 	"time"
+
+	"github.com/jeromedoucet/dahu/core/model"
 )
+
+// default command timeout. It is used
+// when not override by RunParams
+const defaultTimeOut time.Duration = time.Hour * 2
 
 // run params
 type ProcessParams struct {
@@ -31,7 +37,7 @@ func NewProcess(p ProcessParams) *Process {
 	r.cmdArg = formatProcessParams(r.params)
 	r.done = make(chan interface{})
 	r.m = &sync.Mutex{}
-	r.status = CREATED
+	r.status = model.CREATED
 	return r
 }
 
@@ -57,7 +63,7 @@ func formatProcessParams(p ProcessParams) []string {
 type Process struct {
 	params ProcessParams
 	cmdArg []string
-	status RunStatus // must be accessed through thread-safe functions Status() and setStatus()
+	status model.RunStatus // must be accessed through thread-safe functions Status() and setStatus()
 	done   chan interface{}
 	m      *sync.Mutex
 	cmd    *exec.Cmd
@@ -73,7 +79,7 @@ func (r *Process) Start(ctx context.Context) error {
 	// todo return JobRun ?
 	r.m.Lock()
 	defer r.m.Unlock()
-	if r.status == CREATED {
+	if r.status == model.CREATED {
 		timeOut := r.params.TimeOut
 		// no 0 or negative timeOut allowed
 		if timeOut <= time.Duration(0) {
@@ -88,7 +94,7 @@ func (r *Process) Start(ctx context.Context) error {
 
 		log.Printf("INFO >> run now the command : %+v", r.cmd.Args)
 		r.cmd.Start()
-		r.status = RUNNING
+		r.status = model.RUNNING
 		go func() {
 			defer close(r.done)
 			err := r.cmd.Wait() // todo handle error here
@@ -97,9 +103,9 @@ func (r *Process) Start(ctx context.Context) error {
 			defer r.m.Unlock()
 			log.Printf("INFO >> teminate the comand whith error : %+v", err)
 			if r.cmd.ProcessState.Success() {
-				r.status = SUCCESS
-			} else if r.status != CANCELED { // if the command has already been canceled, must not change status
-				r.status = FAILURE
+				r.status = model.SUCCESS
+			} else if r.status != model.CANCELED { // if the command has already been canceled, must not change status
+				r.status = model.FAILURE
 				if c.Err() == context.DeadlineExceeded {
 					r.params.OutputWriter.Write([]byte("Time out"))
 				}
@@ -116,7 +122,7 @@ func (r *Process) Start(ctx context.Context) error {
 // return the status of the
 // command. This function is
 // thread-safe.
-func (r *Process) Status() RunStatus {
+func (r *Process) Status() model.RunStatus {
 	r.m.Lock()
 	defer r.m.Unlock()
 	return r.status
@@ -130,7 +136,7 @@ func (r *Process) Status() RunStatus {
 // of the command.
 // It is usefull for some action that
 // must be done internally too.
-func (r *Process) setStatus(s RunStatus) {
+func (r *Process) setStatus(s model.RunStatus) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	r.status = s
@@ -156,14 +162,14 @@ func (r *Process) Done() chan interface{} {
 func (r *Process) Cancel() error {
 	r.m.Lock()
 	defer r.m.Unlock()
-	if r.status != RUNNING {
+	if r.status != model.RUNNING {
 		return errors.New("can only cancel a RUNNING Run")
 	}
 	err := r.cmd.Process.Kill()
 	// todo make something with that error
 	// todo test this err
 	if err == nil {
-		r.status = CANCELED
+		r.status = model.CANCELED
 	}
 	return err
 }

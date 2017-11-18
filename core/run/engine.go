@@ -48,7 +48,7 @@ func (re *RunEngine) StartOneRun(job *model.Job, ctx context.Context) (model.Job
 		// todo 1 generate an Id value
 		// todo 2 outpout writer ?
 		// todo 3 time out ?
-		params := model.ProcessParams{
+		params := ProcessParams{
 			Id:           "test-2",
 			Image:        job.ImageName,
 			Env:          job.EnvParam,
@@ -59,7 +59,7 @@ func (re *RunEngine) StartOneRun(job *model.Job, ctx context.Context) (model.Job
 			params.Env = make(map[string]string)
 		}
 		params.Env["REPO_URL"] = job.Url // todo test cover me
-		r := model.NewProcess(params)
+		r := NewProcess(params)
 		res := model.JobRun{ContainerName: params.ContainerName()} // todo set run id !
 		err := r.Start(ctx)                                        // todo cover test for error
 		if err == nil {

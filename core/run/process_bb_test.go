@@ -1,4 +1,4 @@
-package model_test
+package run_test
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jeromedoucet/dahu/core/model"
+	"github.com/jeromedoucet/dahu/core/run"
 	"github.com/jeromedoucet/dahu/tests"
 )
 
@@ -17,7 +18,7 @@ import (
 func TestProcessStartWithFailure(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.ProcessParams{
+	params := run.ProcessParams{
 		Id:    "test-1",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -27,7 +28,7 @@ func TestProcessStartWithFailure(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewProcess(params)
+	r := run.NewProcess(params)
 
 	// when
 	r.Start(context.Background())
@@ -46,7 +47,7 @@ func TestProcessStartWithFailure(t *testing.T) {
 func TestProcessStartWithTimeOut(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.ProcessParams{
+	params := run.ProcessParams{
 		Id:    "test-2",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -57,7 +58,7 @@ func TestProcessStartWithTimeOut(t *testing.T) {
 		TimeOut:      time.Second * 1,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewProcess(params)
+	r := run.NewProcess(params)
 
 	// when
 	r.Start(context.Background())
@@ -77,7 +78,7 @@ func TestProcessStartWithTimeOut(t *testing.T) {
 func TestProcessStartWithSuccess(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.ProcessParams{
+	params := run.ProcessParams{
 		Id:    "test-3",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -87,7 +88,7 @@ func TestProcessStartWithSuccess(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewProcess(params)
+	r := run.NewProcess(params)
 
 	// when
 	r.Start(context.Background())
@@ -107,7 +108,7 @@ func TestProcessStartWithSuccess(t *testing.T) {
 func TestProcessStartTwiceShouldReturnError(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.ProcessParams{
+	params := run.ProcessParams{
 		Id:    "test-4",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -117,7 +118,7 @@ func TestProcessStartTwiceShouldReturnError(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewProcess(params)
+	r := run.NewProcess(params)
 
 	// when
 	err1 := r.Start(context.Background())
@@ -143,7 +144,7 @@ func TestProcessStartTwiceShouldReturnError(t *testing.T) {
 func TestProcessStartWithCancelation(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.ProcessParams{
+	params := run.ProcessParams{
 		Id:    "test-5",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -153,7 +154,7 @@ func TestProcessStartWithCancelation(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewProcess(params)
+	r := run.NewProcess(params)
 
 	// when
 	err := r.Start(context.Background())
@@ -174,7 +175,7 @@ func TestProcessStartWithCancelation(t *testing.T) {
 func TestProcessCancelationShouldFailWhenNotStarted(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.ProcessParams{
+	params := run.ProcessParams{
 		Id:    "test-6",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -183,7 +184,7 @@ func TestProcessCancelationShouldFailWhenNotStarted(t *testing.T) {
 		},
 		OutputWriter: buf,
 	}
-	r := model.NewProcess(params)
+	r := run.NewProcess(params)
 
 	// when
 	err := r.Cancel()
@@ -198,7 +199,7 @@ func TestProcessCancelationShouldFailWhenNotStarted(t *testing.T) {
 func TestProcessCancelationShouldFailWhenFinished(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.ProcessParams{
+	params := run.ProcessParams{
 		Id:    "test-7",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -209,7 +210,7 @@ func TestProcessCancelationShouldFailWhenFinished(t *testing.T) {
 	}
 
 	defer tests.RemoveContainer(params.ContainerName())
-	r := model.NewProcess(params)
+	r := run.NewProcess(params)
 
 	// when
 	r.Start(context.Background())
