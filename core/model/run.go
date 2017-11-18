@@ -12,7 +12,7 @@ import (
 )
 
 // run params
-type RunParams struct {
+type ProcessParams struct {
 	Id           string
 	Image        string
 	Env          map[string]string
@@ -20,12 +20,12 @@ type RunParams struct {
 	TimeOut      time.Duration
 }
 
-func (p *RunParams) ContainerName() string {
+func (p *ProcessParams) ContainerName() string {
 	return fmt.Sprintf("dahu-run-%s", p.Id)
 }
 
 // initiate a new Run with given params
-func NewProcess(p RunParams) *Process {
+func NewProcess(p ProcessParams) *Process {
 	r := new(Process)
 	r.params = p
 	r.cmdArg = formatProcessParams(r.params)
@@ -38,7 +38,7 @@ func NewProcess(p RunParams) *Process {
 // format a docker run command
 // with some constants ('run')
 // and thanks to run params (env and image name for instance).
-func formatProcessParams(p RunParams) []string {
+func formatProcessParams(p ProcessParams) []string {
 	args := []string{"run", "--name", p.ContainerName()}
 	if len(p.Env) != 0 {
 		buf := make([]string, 0)
@@ -55,7 +55,7 @@ func formatProcessParams(p RunParams) []string {
 // for example, this could be a git clone,
 // a run of a test set or even a deployment
 type Process struct {
-	params RunParams
+	params ProcessParams
 	cmdArg []string
 	status RunStatus // must be accessed through thread-safe functions Status() and setStatus()
 	done   chan interface{}

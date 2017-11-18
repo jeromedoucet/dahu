@@ -17,7 +17,7 @@ import (
 func TestProcessStartWithFailure(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.RunParams{
+	params := model.ProcessParams{
 		Id:    "test-1",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -46,7 +46,7 @@ func TestProcessStartWithFailure(t *testing.T) {
 func TestProcessStartWithTimeOut(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.RunParams{
+	params := model.ProcessParams{
 		Id:    "test-2",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -77,7 +77,7 @@ func TestProcessStartWithTimeOut(t *testing.T) {
 func TestProcessStartWithSuccess(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.RunParams{
+	params := model.ProcessParams{
 		Id:    "test-3",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -107,7 +107,7 @@ func TestProcessStartWithSuccess(t *testing.T) {
 func TestProcessStartTwiceShouldReturnError(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.RunParams{
+	params := model.ProcessParams{
 		Id:    "test-4",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -143,7 +143,7 @@ func TestProcessStartTwiceShouldReturnError(t *testing.T) {
 func TestProcessStartWithCancelation(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.RunParams{
+	params := model.ProcessParams{
 		Id:    "test-5",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -174,7 +174,7 @@ func TestProcessStartWithCancelation(t *testing.T) {
 func TestProcessCancelationShouldFailWhenNotStarted(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.RunParams{
+	params := model.ProcessParams{
 		Id:    "test-6",
 		Image: "dahuci/job-test",
 		Env: map[string]string{
@@ -198,7 +198,7 @@ func TestProcessCancelationShouldFailWhenNotStarted(t *testing.T) {
 func TestProcessCancelationShouldFailWhenFinished(t *testing.T) {
 	// given
 	buf := new(bytes.Buffer)
-	params := model.RunParams{
+	params := model.ProcessParams{
 		Id:    "test-7",
 		Image: "dahuci/job-test",
 		Env: map[string]string{

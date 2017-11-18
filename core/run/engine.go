@@ -48,7 +48,7 @@ func (re *RunEngine) StartOneRun(job *model.Job, ctx context.Context) (model.Job
 		// todo 1 generate an Id value
 		// todo 2 outpout writer ?
 		// todo 3 time out ?
-		params := model.RunParams{
+		params := model.ProcessParams{
 			Id:           "test-2",
 			Image:        job.ImageName,
 			Env:          job.EnvParam,
