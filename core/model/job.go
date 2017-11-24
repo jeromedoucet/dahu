@@ -39,6 +39,7 @@ type JobRun struct {
 	Status        RunStatus  `json:"runStatus"`
 	StartTime     *time.Time `json:"startTime"`
 	EndTime       *time.Time `json:"endTime"`
+	Version       int64      `json: "version"`
 }
 
 // generate an Id for the JobRun.
@@ -103,6 +104,33 @@ func (j *Job) AppendJobRun(jobRun *JobRun) {
 			log.Printf("WARN >> Encounter error when trying to remove container %s : %+v", rollingJr.ContainerName, err)
 		}
 	}
+}
+
+func (j *Job) FindJobRun(id []byte) (*JobRun, error) {
+	for _, v := range j.JobRuns {
+		if string(v.Id) == string(id) {
+			return v, nil
+		}
+	}
+	return nil, NewNoMorePersisted(fmt.Sprintf("WARN >> Job %s, the JobRun %s is not persisted anymore.", string(j.Id), string(id)))
+}
+
+func (j *Job) UpdateJobRun(jobRun *JobRun) *JobRun {
+	existingJobRun, err := j.FindJobRun(jobRun.Id) // todo test not initialized JobRun
+	if err != nil {                                // todo test me
+		return jobRun
+	}
+	if jobRun.Version != existingJobRun.Version {
+		return existingJobRun
+	}
+	jobRun.Version = time.Now().UnixNano()
+	for i, v := range j.JobRuns {
+		if v != nil && string(v.Id) == string(jobRun.Id) { // todo add this test (on nil)
+			j.JobRuns[i] = jobRun
+			break
+		}
+	}
+	return jobRun
 }
 
 func (j *Job) GenerateId() error {

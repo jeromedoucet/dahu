@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/jeromedoucet/dahu/configuration"
@@ -122,10 +123,14 @@ func (i *inMemory) CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.
 		var job model.Job
 		jobData := b.Get(jobId)
 		updateErr = json.Unmarshal(jobData, &job) // todo handle this error
+		if updateErr != nil {
+			return updateErr
+		}
 		updateErr = jobRun.GenerateId()
 		if updateErr != nil {
 			return updateErr
 		}
+		jobRun.Version = time.Now().UnixNano()
 		job.AppendJobRun(jobRun)
 		var data []byte
 		data, updateErr = json.Marshal(job)
@@ -140,6 +145,51 @@ func (i *inMemory) CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.
 	} else {
 		return nil, err
 	}
+}
+
+func (i *inMemory) UpdateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.Context) (*model.JobRun, error) {
+	// if no more JobRun, return NoMorePersisted
+	// if the JobRun si outdated, return the upToDateVersion and OutDated.
+	// imagine what to do in case of outdated (depends what we were trying to update)
+	err := i.doUpdateAction(func(tx *bolt.Tx) error {
+		var updateErr error
+		b := tx.Bucket([]byte("jobs"))
+		if b == nil {
+			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
+		}
+		if jobRun == nil || !jobRun.IsValid() { // todo test me
+			return errors.New(fmt.Sprintf("persistence >> trying to insert a nil or a an invalid JobRun : %+v", jobRun))
+		}
+		var job *model.Job
+		job, updateErr = getExistingJob(tx, jobId)
+		if updateErr != nil { // todo test me
+			return updateErr
+		}
+		job.UpdateJobRun(jobRun) // todo find a way to return it
+		var data []byte
+		data, updateErr = json.Marshal(job)
+		if updateErr != nil {
+			return updateErr
+		}
+		updateErr = b.Put(jobId, data) // todo handle the error
+		return updateErr
+	})
+	if err == nil {
+		return jobRun, nil
+	} else {
+		return nil, err
+	}
+}
+
+func getExistingJob(tx *bolt.Tx, jobId []byte) (*model.Job, error) {
+	b := tx.Bucket([]byte("jobs"))
+	if b == nil {
+		return nil, errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
+	}
+	var job model.Job
+	jobData := b.Get(jobId)
+	err := json.Unmarshal(jobData, &job) // todo handle this error
+	return &job, err
 }
 
 func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {
