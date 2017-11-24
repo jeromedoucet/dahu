@@ -116,8 +116,8 @@ func (j *Job) FindJobRun(id []byte) (*JobRun, error) {
 }
 
 func (j *Job) UpdateJobRun(jobRun *JobRun) *JobRun {
-	existingJobRun, err := j.FindJobRun(jobRun.Id) // todo test not initialized JobRun
-	if err != nil {                                // todo test me
+	existingJobRun, err := j.FindJobRun(jobRun.Id)
+	if err != nil {
 		return jobRun
 	}
 	if jobRun.Version != existingJobRun.Version {
@@ -125,7 +125,7 @@ func (j *Job) UpdateJobRun(jobRun *JobRun) *JobRun {
 	}
 	jobRun.Version = time.Now().UnixNano()
 	for i, v := range j.JobRuns {
-		if v != nil && string(v.Id) == string(jobRun.Id) { // todo add this test (on nil)
+		if v != nil && string(v.Id) == string(jobRun.Id) {
 			j.JobRuns[i] = jobRun
 			break
 		}

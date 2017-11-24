@@ -120,10 +120,9 @@ func (i *inMemory) CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.
 		if b == nil {
 			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
 		}
-		var job model.Job
-		jobData := b.Get(jobId)
-		updateErr = json.Unmarshal(jobData, &job) // todo handle this error
-		if updateErr != nil {
+		var job *model.Job
+		job, updateErr = getExistingJob(tx, jobId)
+		if updateErr != nil { // todo test me
 			return updateErr
 		}
 		updateErr = jobRun.GenerateId()
@@ -162,7 +161,7 @@ func (i *inMemory) UpdateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.
 		}
 		var job *model.Job
 		job, updateErr = getExistingJob(tx, jobId)
-		if updateErr != nil { // todo test me
+		if updateErr != nil {
 			return updateErr
 		}
 		job.UpdateJobRun(jobRun) // todo find a way to return it

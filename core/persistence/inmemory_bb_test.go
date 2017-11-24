@@ -299,7 +299,6 @@ func TestCreateJobRunShouldFailIfNoJob(t *testing.T) {
 	}
 }
 
-// test the nominal case of #UpdateJobRun
 func TestUpdateJobRunShouldUpdateAJob(t *testing.T) {
 	// given
 	j := model.Job{Name: "test"}
@@ -338,5 +337,7 @@ func TestUpdateJobRunShouldUpdateAJob(t *testing.T) {
 		t.Error("expect the version to have been updated, but it is not the case")
 	}
 }
+
+// todo update when JObRun not found
 
 // todo test id already exist
