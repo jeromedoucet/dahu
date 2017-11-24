@@ -108,7 +108,7 @@ func (j *Job) AppendJobRun(jobRun *JobRun) {
 
 func (j *Job) FindJobRun(id []byte) (*JobRun, error) {
 	for _, v := range j.JobRuns {
-		if string(v.Id) == string(id) {
+		if v != nil && string(v.Id) == string(id) {
 			return v, nil
 		}
 	}

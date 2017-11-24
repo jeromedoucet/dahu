@@ -3,6 +3,7 @@ package model_test
 import (
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/jeromedoucet/dahu/core/model"
 )
@@ -122,6 +123,52 @@ func TestAppendJobRunShouldCreateTheSliceWhenNil(t *testing.T) {
 	}
 	if j.JobRuns[4] != nil {
 		t.Error("expect the last JobRun to be nil")
+	}
+}
+
+func TestUpdateJobRunShouldUpdateExistingJobRun(t *testing.T) {
+	// given
+	j := model.Job{JobRuns: []*model.JobRun{
+		nil, // this nil is used to test one branch in the function
+		&model.JobRun{Id: []byte("4"), Status: model.CREATED},
+		&model.JobRun{Id: []byte("3")},
+		&model.JobRun{Id: []byte("2")},
+		&model.JobRun{Id: []byte("1")},
+	}}
+	now := time.Now()
+
+	jr := model.JobRun{Id: []byte("4"), Status: model.CANCELED}
+
+	// when
+	actualJr := j.UpdateJobRun(&jr)
+
+	// then
+	if j.JobRuns[1].Status != model.CANCELED {
+		t.Errorf("expect the first JobRun status to have been updated to %d, but got %d", model.CREATED, j.JobRuns[4].Status)
+	}
+	if actualJr.Version <= now.UnixNano() {
+		t.Error("expect the returned JobRun version to have been updated, but it is not the case")
+	}
+	if j.JobRuns[1].Version <= now.UnixNano() {
+		t.Error("expect the first JobRun version to have been updated, but it is not the case")
+	}
+}
+
+func TestUpdateJobRunShouldReturnIncomingJobRunIfNotFound(t *testing.T) {
+	// given
+	j := model.Job{}
+	now := time.Now()
+	jr := model.JobRun{Id: []byte("5"), Status: model.CANCELED, Version: now.UnixNano()}
+
+	// when
+	actualJr := j.UpdateJobRun(&jr)
+
+	// then
+	if j.JobRuns != nil {
+		t.Errorf("expect the JobRuns to be nil but got %d", j.JobRuns)
+	}
+	if actualJr.Version != now.UnixNano() {
+		t.Error("expect the returned JobRun version not to have been updated, but it is not the case")
 	}
 }
 
