@@ -34,13 +34,14 @@ func (p *ProcessParams) ContainerName() string {
 }
 
 // initiate a new Run with given params
-func NewProcess(p ProcessParams) *Process {
+func NewProcess(p ProcessParams, repository persistence.Repository) *Process {
 	r := new(Process)
 	r.params = p
 	r.cmdArg = formatProcessParams(r.params)
 	r.done = make(chan interface{})
 	r.m = &sync.Mutex{}
 	r.status = model.CREATED
+	r.repository = repository
 	return r
 }
 
@@ -64,12 +65,14 @@ func formatProcessParams(p ProcessParams) []string {
 // for example, this could be a git clone,
 // a run of a test set or even a deployment
 type Process struct {
-	params ProcessParams
-	cmdArg []string
-	status model.RunStatus // must be accessed through thread-safe functions Status() and setStatus()
-	done   chan interface{}
-	m      *sync.Mutex
-	cmd    *exec.Cmd
+	params     ProcessParams
+	cmdArg     []string
+	status     model.RunStatus // must be accessed through thread-safe functions Status() and setStatus()
+	done       chan interface{}
+	m          *sync.Mutex
+	cmd        *exec.Cmd
+	jobRun     *model.JobRun
+	repository persistence.Repository
 }
 
 // start the command.
@@ -78,8 +81,7 @@ type Process struct {
 // value than CREATED.
 // this function is thread-safe and
 // non blocking.
-func (r *Process) Start(ctx context.Context, repository persistence.Repository) (*model.JobRun, error) {
-	// todo return JobRun ?
+func (r *Process) Start(ctx context.Context) (model.JobRun, error) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	if r.status == model.CREATED {
@@ -96,32 +98,31 @@ func (r *Process) Start(ctx context.Context, repository persistence.Repository) 
 		r.cmd.Stderr = r.params.OutputWriter
 
 		log.Printf("INFO >> run now the command : %+v", r.cmd.Args)
-		now := time.Now()
 		r.cmd.Start()
-		r.status = model.RUNNING
-		jobRun := model.JobRun{ContainerName: r.params.ContainerName(), Status: r.status, StartTime: &now}
-		res, _ := repository.CreateJobRun(&jobRun, r.params.JobId, ctx) // todo handle the error correctly
-		go func() {
-			defer close(r.done)
-			err := r.cmd.Wait() // todo handle error here
-			cancel()
-			r.m.Lock()
-			defer r.m.Unlock()
-			log.Printf("INFO >> teminate the comand whith error : %+v", err)
-			if r.cmd.ProcessState.Success() {
-				r.status = model.SUCCESS
-			} else if r.status != model.CANCELED { // if the command has already been canceled, must not change status
-				r.status = model.FAILURE
-				if c.Err() == context.DeadlineExceeded {
-					r.params.OutputWriter.Write([]byte("Time out"))
-				}
-			}
-		}()
-		return res, nil
+		r.setStatus(model.RUNNING, ctx)
+		go r.listen(c, cancel, ctx)
+		return *r.jobRun, nil
 	} else {
 		msg := "ERROR >> model.Run.Start try to Start a Run more than one time"
 		log.Print(msg)
-		return nil, errors.New(msg)
+		return model.JobRun{}, errors.New(msg)
+	}
+}
+
+func (r *Process) listen(c context.Context, cancel context.CancelFunc, ctx context.Context) {
+	defer close(r.done)
+	err := r.cmd.Wait() // todo handle error here
+	cancel()
+	r.m.Lock()
+	defer r.m.Unlock()
+	log.Printf("INFO >> teminate the comand whith error : %+v", err)
+	if r.cmd.ProcessState.Success() {
+		r.setStatus(model.SUCCESS, ctx)
+	} else if r.status != model.CANCELED {
+		r.setStatus(model.FAILURE, ctx)
+		if c.Err() == context.DeadlineExceeded {
+			r.params.OutputWriter.Write([]byte("Time out"))
+		}
 	}
 }
 
@@ -142,10 +143,17 @@ func (r *Process) Status() model.RunStatus {
 // of the command.
 // It is usefull for some action that
 // must be done internally too.
-func (r *Process) setStatus(s model.RunStatus) {
-	r.m.Lock()
-	defer r.m.Unlock()
+func (r *Process) setStatus(s model.RunStatus, ctx context.Context) {
 	r.status = s
+	if r.jobRun == nil {
+		now := time.Now()
+		jobRunData := model.JobRun{ContainerName: r.params.ContainerName(), StartTime: &now, Status: r.status}
+		r.jobRun = &jobRunData
+		r.jobRun, _ = r.repository.CreateJobRun(r.jobRun, r.params.JobId, ctx) // todo handle the error correctly
+	} else {
+		r.jobRun.Status = s
+		r.jobRun, _ = r.repository.UpdateJobRun(r.jobRun, r.params.JobId, ctx)
+	}
 }
 
 // return a channel that
@@ -165,7 +173,7 @@ func (r *Process) Done() chan interface{} {
 // process termination encounter some issues.
 //
 // this function is thread-safe
-func (r *Process) Cancel() error {
+func (r *Process) Cancel(ctx context.Context) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 	if r.status != model.RUNNING {
@@ -175,7 +183,7 @@ func (r *Process) Cancel() error {
 	// todo make something with that error
 	// todo test this err
 	if err == nil {
-		r.status = model.CANCELED
+		r.setStatus(model.CANCELED, ctx)
 	}
 	return err
 }

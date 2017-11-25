@@ -53,8 +53,8 @@ func (re *RunEngine) StartOneRun(job *model.Job, ctx context.Context) (*model.Jo
 			params.Env = make(map[string]string)
 		}
 		params.Env["REPO_URL"] = job.Url // todo test cover me
-		r := NewProcess(params)
-		res, err := r.Start(ctx, re.repository) // todo cover test for error
+		r := NewProcess(params, re.repository)
+		res, err := r.Start(ctx) // todo cover test for error
 		if err == nil {
 			// if the run has started without error
 			// defer the unlock in another goroutine
@@ -65,7 +65,7 @@ func (re *RunEngine) StartOneRun(job *model.Job, ctx context.Context) (*model.Jo
 		} else {
 			re.runningCount.RUnlock()
 		}
-		return res, err
+		return &res, err
 	}
 }
 
