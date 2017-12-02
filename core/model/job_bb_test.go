@@ -8,6 +8,58 @@ import (
 	"github.com/jeromedoucet/dahu/core/model"
 )
 
+func TestIsValidJobReturnTrue(t *testing.T) {
+	// given
+	j := model.Job{Name: "test", Url: "http://test", ImageName: "test"}
+
+	// when
+	res := j.IsValid()
+
+	// then
+	if !res {
+		t.Error("expect the job to be valid but it is not the case")
+	}
+}
+
+func TestIsValidJobWithoutName(t *testing.T) {
+	// given
+	j := model.Job{Url: "http://test", ImageName: "test"}
+
+	// when
+	res := j.IsValid()
+
+	// then
+	if res {
+		t.Error("expect the job to be invalid but is valid")
+	}
+}
+
+func TestIsValidJobWithoutUrl(t *testing.T) {
+	// given
+	j := model.Job{Name: "test", ImageName: "test"}
+
+	// when
+	res := j.IsValid()
+
+	// then
+	if res {
+		t.Error("expect the job to be invalid but is valid")
+	}
+}
+
+func TestIsValidJobWithoutImageName(t *testing.T) {
+	// given
+	j := model.Job{Name: "test", Url: "http://test"}
+
+	// when
+	res := j.IsValid()
+
+	// then
+	if res {
+		t.Error("expect the job to be invalid but is valid")
+	}
+}
+
 func TestIsValidJobRunReturnTrue(t *testing.T) {
 	// given
 	jr := model.JobRun{Status: model.CREATED, ContainerName: "test"}
@@ -154,6 +206,34 @@ func TestUpdateJobRunShouldUpdateExistingJobRun(t *testing.T) {
 	}
 }
 
+func TestUpdateJobRunShouldNotUpdqteJobRunWhenVersionDifferent(t *testing.T) {
+	// given
+	now := time.Now()
+	j := model.Job{JobRuns: []*model.JobRun{
+		nil, // this nil is used to test one branch in the function
+		&model.JobRun{Id: []byte("4"), Status: model.CREATED, Version: now.UnixNano()},
+		&model.JobRun{Id: []byte("3")},
+		&model.JobRun{Id: []byte("2")},
+		&model.JobRun{Id: []byte("1")},
+	}}
+
+	jr := model.JobRun{Id: []byte("4"), Status: model.CANCELED, Version: now.Truncate(time.Hour * 2).UnixNano()}
+
+	// when
+	actualJr := j.UpdateJobRun(&jr)
+
+	// then
+	if j.JobRuns[1].Status != model.CREATED {
+		t.Errorf("expect the first JobRun status not to have been updated from %d, but got %d", model.CREATED, j.JobRuns[4].Status)
+	}
+	if actualJr.Version != now.UnixNano() {
+		t.Error("expect the returned JobRun version to be unchanged, but it is not the case")
+	}
+	if j.JobRuns[1].Version != now.UnixNano() {
+		t.Error("expect the first JobRun version to be unchanged, but it is not the case")
+	}
+}
+
 func TestUpdateJobRunShouldReturnIncomingJobRunIfNotFound(t *testing.T) {
 	// given
 	j := model.Job{}
@@ -172,4 +252,68 @@ func TestUpdateJobRunShouldReturnIncomingJobRunIfNotFound(t *testing.T) {
 	}
 }
 
-// todo test when jobRun not valid
+func TestJobRunIdGenerationShouldBeSuccessFullIfNoExistingId(t *testing.T) {
+	// given
+	jr := new(model.JobRun)
+
+	// when
+	err := jr.GenerateId()
+
+	// then
+	if err != nil {
+		t.Errorf("Expect #GenerateId to return nil, but got %v", err)
+	}
+	if jr.Id == nil {
+		t.Errorf("expect the Id to have been generated, but is nil")
+	}
+}
+
+func TestJobRunIdGenerationShouldBeInErrorIfExistingId(t *testing.T) {
+	// given
+	jr := new(model.JobRun)
+	jr.Id = []byte("existingId")
+
+	// when
+	err := jr.GenerateId()
+
+	// then
+	if err == nil {
+		t.Errorf("Expect #GenerateId to return an error, but got nil", err)
+	}
+	if string(jr.Id) != "existingId" {
+		t.Errorf("expect the Id not to have changed, but got %s", string(jr.Id))
+	}
+}
+
+func TestJobIdGenerationShouldBeSuccessFullIfNoExistingId(t *testing.T) {
+	// given
+	j := new(model.Job)
+
+	// when
+	err := j.GenerateId()
+
+	// then
+	if err != nil {
+		t.Errorf("Expect #GenerateId to return nil, but got %v", err)
+	}
+	if j.Id == nil {
+		t.Errorf("expect the Id to have been generated, but is nil")
+	}
+}
+
+func TestJobIdGenerationShouldBeInErrorIfExistingId(t *testing.T) {
+	// given
+	j := new(model.Job)
+	j.Id = []byte("existingId")
+
+	// when
+	err := j.GenerateId()
+
+	// then
+	if err == nil {
+		t.Errorf("Expect #GenerateId to return an error, but got nil", err)
+	}
+	if string(j.Id) != "existingId" {
+		t.Errorf("expect the Id not to have changed, but got %s", string(j.Id))
+	}
+}
