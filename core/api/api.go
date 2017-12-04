@@ -19,7 +19,7 @@ type Api struct {
 func (a *Api) initRouter() {
 	a.router = route.NewDynamicRouter()
 	a.router.HandleFunc("/jobs", a.handleJobs)
-	a.router.HandleFunc("/jobs/:jobId/trigger", a.handleJob)
+	a.router.HandleFunc("/jobs/:jobId/run", a.handleJob)
 	a.router.HandleFunc("/login", a.handleAuthentication)
 }
 

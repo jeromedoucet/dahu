@@ -42,7 +42,6 @@ func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
 		t.Fatalf("Expect 401 return code when trying to create a job "+
 			"without a token. Got %d", resp.StatusCode)
 	}
-
 }
 
 func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
@@ -78,7 +77,6 @@ func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
 		t.Fatalf("Expect 401 return code when trying to create a job with bad credentials"+
 			"without a token. Got %d", resp.StatusCode)
 	}
-
 }
 
 func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
@@ -114,7 +112,6 @@ func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 		t.Fatalf("Expect 401 return code when trying to create a job with outdated credentials"+
 			"without a token. Got %d", resp.StatusCode)
 	}
-
 }
 
 func TestCreateANewJobShouldReturn400WhenNoName(t *testing.T) {
@@ -150,7 +147,6 @@ func TestCreateANewJobShouldReturn400WhenNoName(t *testing.T) {
 		t.Fatalf("Expect 400 return code when trying to create a job without name. "+
 			"Got %d", resp.StatusCode)
 	}
-
 }
 
 func TestCreateANewJobShouldReturn400WhenNoUrl(t *testing.T) {
@@ -186,7 +182,6 @@ func TestCreateANewJobShouldReturn400WhenNoUrl(t *testing.T) {
 		t.Fatalf("Expect 400 return code when trying to create a job without url. "+
 			"Got %d", resp.StatusCode)
 	}
-
 }
 
 func TestCreateANewJobShouldReturn400WhenNoImage(t *testing.T) {
@@ -379,7 +374,7 @@ func buildJobsPostReq(body []byte, token string, addr string) *http.Request {
 }
 
 func buildJobTrigReq(body []byte, token, addr, jobId string) *http.Request {
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/jobs/%s/trigger",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/jobs/%s/run",
 		addr, jobId), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+token)
 	return req
