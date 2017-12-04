@@ -7,36 +7,9 @@ import (
 	"time"
 
 	"github.com/jeromedoucet/dahu/core/model"
-	"github.com/jeromedoucet/dahu/core/persistence"
 	"github.com/jeromedoucet/dahu/core/run"
 	"github.com/jeromedoucet/dahu/tests"
 )
-
-type mockRepository struct {
-	persistence.Repository
-	createJobRunCount int
-	updateJobRunCount int
-	createJobRuns     []model.JobRun
-	updateJobRuns     []model.JobRun
-}
-
-func (m *mockRepository) CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.Context) (*model.JobRun, error) {
-	if m.createJobRuns == nil {
-		m.createJobRuns = make([]model.JobRun, 0)
-	}
-	m.createJobRuns = append(m.createJobRuns, *jobRun)
-	m.createJobRunCount++
-	return jobRun, nil
-}
-
-func (m *mockRepository) UpdateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.Context) (*model.JobRun, error) {
-	if m.updateJobRuns == nil {
-		m.updateJobRuns = make([]model.JobRun, 0)
-	}
-	m.updateJobRuns = append(m.updateJobRuns, *jobRun)
-	m.updateJobRunCount++
-	return jobRun, nil
-}
 
 // test the behavior of the run module when
 // executing a Job with a failure result.
@@ -55,7 +28,7 @@ func TestProcessStartWithFailure(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	m := new(mockRepository)
+	m := new(tests.MockRepository)
 	r := run.NewProcess(params, m)
 
 	// when
@@ -69,17 +42,17 @@ func TestProcessStartWithFailure(t *testing.T) {
 	if buf.String() != "Failure\n" {
 		t.Errorf("Expect 'Failure' in output writer, got : %#v", buf.String())
 	}
-	if m.createJobRunCount != 1 {
+	if m.CreateJobRunCount != 1 {
 		t.Error("expect #CreateJobRun to have been called one time, but it has not been called")
 	}
-	if m.createJobRuns[0].Status != model.RUNNING {
-		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.RUNNING, m.createJobRuns[0].Status)
+	if m.CreateJobRuns[0].Status != model.RUNNING {
+		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.RUNNING, m.CreateJobRuns[0].Status)
 	}
-	if m.updateJobRunCount != 1 {
+	if m.UpdateJobRunCount != 1 {
 		t.Error("expect #UpdateJobRun to have been called one time, but it has not been called")
 	}
-	if m.updateJobRuns[0].Status != model.FAILURE {
-		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.FAILURE, m.updateJobRuns[0].Status)
+	if m.UpdateJobRuns[0].Status != model.FAILURE {
+		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.FAILURE, m.UpdateJobRuns[0].Status)
 	}
 }
 
@@ -98,7 +71,7 @@ func TestProcessStartWithTimeOut(t *testing.T) {
 		TimeOut:      time.Second * 1,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	m := new(mockRepository)
+	m := new(tests.MockRepository)
 	r := run.NewProcess(params, m)
 
 	// when
@@ -112,17 +85,17 @@ func TestProcessStartWithTimeOut(t *testing.T) {
 	if buf.String() != "Time out" {
 		t.Errorf("Expect 'Time out' in output writer, got : %#v", buf.String())
 	}
-	if m.createJobRunCount != 1 {
+	if m.CreateJobRunCount != 1 {
 		t.Error("expect #CreateJobRun to have been called one time, but it has not been called")
 	}
-	if m.createJobRuns[0].Status != model.RUNNING {
-		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.RUNNING, m.createJobRuns[0].Status)
+	if m.CreateJobRuns[0].Status != model.RUNNING {
+		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.RUNNING, m.CreateJobRuns[0].Status)
 	}
-	if m.updateJobRunCount != 1 {
+	if m.UpdateJobRunCount != 1 {
 		t.Error("expect #UpdateJobRun to have been called one time, but it has not been called")
 	}
-	if m.updateJobRuns[0].Status != model.FAILURE {
-		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.FAILURE, m.updateJobRuns[0].Status)
+	if m.UpdateJobRuns[0].Status != model.FAILURE {
+		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.FAILURE, m.UpdateJobRuns[0].Status)
 	}
 }
 
@@ -141,7 +114,7 @@ func TestProcessStartWithSuccess(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	m := new(mockRepository)
+	m := new(tests.MockRepository)
 	r := run.NewProcess(params, m)
 
 	// when
@@ -155,17 +128,17 @@ func TestProcessStartWithSuccess(t *testing.T) {
 	if buf.String() != "Success\n" {
 		t.Errorf("Expect 'Success' in output writer, got : %#v", buf.String())
 	}
-	if m.createJobRunCount != 1 {
+	if m.CreateJobRunCount != 1 {
 		t.Error("expect #CreateJobRun to have been called one time, but it has not been called")
 	}
-	if m.createJobRuns[0].Status != model.RUNNING {
-		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.RUNNING, m.createJobRuns[0].Status)
+	if m.CreateJobRuns[0].Status != model.RUNNING {
+		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.RUNNING, m.CreateJobRuns[0].Status)
 	}
-	if m.updateJobRunCount != 1 {
+	if m.UpdateJobRunCount != 1 {
 		t.Error("expect #UpdateJobRun to have been called one time, but it has not been called")
 	}
-	if m.updateJobRuns[0].Status != model.SUCCESS {
-		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.SUCCESS, m.updateJobRuns[0].Status)
+	if m.UpdateJobRuns[0].Status != model.SUCCESS {
+		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.SUCCESS, m.UpdateJobRuns[0].Status)
 	}
 }
 
@@ -184,7 +157,7 @@ func TestProcessStartTwiceShouldReturnError(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	r := run.NewProcess(params, new(mockRepository))
+	r := run.NewProcess(params, new(tests.MockRepository))
 
 	// when
 	_, err1 := r.Start(context.Background())
@@ -220,7 +193,7 @@ func TestProcessStartWithCancelation(t *testing.T) {
 		OutputWriter: buf,
 	}
 	defer tests.RemoveContainer(params.ContainerName())
-	m := new(mockRepository)
+	m := new(tests.MockRepository)
 	r := run.NewProcess(params, m)
 
 	// when
@@ -235,17 +208,17 @@ func TestProcessStartWithCancelation(t *testing.T) {
 	if r.Status() != model.CANCELED {
 		t.Errorf("Expect CANCELED state (%d), got : %d", model.CANCELED, r.Status())
 	}
-	if m.createJobRunCount != 1 {
+	if m.CreateJobRunCount != 1 {
 		t.Error("expect #CreateJobRun to have been called one time, but it has not been called")
 	}
-	if m.createJobRuns[0].Status != model.RUNNING {
-		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.RUNNING, m.createJobRuns[0].Status)
+	if m.CreateJobRuns[0].Status != model.RUNNING {
+		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.RUNNING, m.CreateJobRuns[0].Status)
 	}
-	if m.updateJobRunCount != 1 {
+	if m.UpdateJobRunCount != 1 {
 		t.Error("expect #UpdateJobRun to have been called one time, but it has not been called")
 	}
-	if m.updateJobRuns[0].Status != model.CANCELED {
-		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.CANCELED, m.updateJobRuns[0].Status)
+	if m.UpdateJobRuns[0].Status != model.CANCELED {
+		t.Errorf("expect the jobRun status when created to be %d, but got %d", model.CANCELED, m.UpdateJobRuns[0].Status)
 	}
 }
 
@@ -263,7 +236,7 @@ func TestProcessCancelationShouldFailWhenNotStarted(t *testing.T) {
 		},
 		OutputWriter: buf,
 	}
-	r := run.NewProcess(params, new(mockRepository))
+	r := run.NewProcess(params, new(tests.MockRepository))
 
 	// when
 	err := r.Cancel(context.Background())
@@ -289,7 +262,7 @@ func TestProcessCancelationShouldFailWhenFinished(t *testing.T) {
 	}
 
 	defer tests.RemoveContainer(params.ContainerName())
-	r := run.NewProcess(params, new(mockRepository))
+	r := run.NewProcess(params, new(tests.MockRepository))
 
 	// when
 	r.Start(context.Background())

@@ -12,9 +12,14 @@ import (
 	"github.com/jeromedoucet/dahu/core/persistence"
 )
 
+type RunEngine interface {
+	StartOneRun(job *model.Job, ctx context.Context) (*model.JobRun, error)
+	WaitClose()
+}
+
 // create a new run engine.
-func NewRunEngine(conf *configuration.Conf) *RunEngine {
-	r := new(RunEngine)
+func NewRunEngine(conf *configuration.Conf) RunEngine {
+	r := new(SimpleRunEngine)
 	r.runningCount = &sync.RWMutex{}
 	r.conf = conf
 	r.repository = persistence.GetRepository(conf)
@@ -23,7 +28,7 @@ func NewRunEngine(conf *configuration.Conf) *RunEngine {
 
 // unique point of thruth
 // for Run.
-type RunEngine struct {
+type SimpleRunEngine struct {
 	conf         *configuration.Conf
 	runningCount *sync.RWMutex
 	repository   persistence.Repository
@@ -31,7 +36,7 @@ type RunEngine struct {
 
 // Wait for all current run to be finished and then
 // close the Close channel
-func (r *RunEngine) WaitClose() {
+func (r *SimpleRunEngine) WaitClose() {
 	// todo test me
 	// todo add a context
 	r.runningCount.Lock()
@@ -39,9 +44,8 @@ func (r *RunEngine) WaitClose() {
 	close(r.conf.Close)
 }
 
-// Start one new Run from a given
-// job.
-func (re *RunEngine) StartOneRun(job *model.Job, ctx context.Context) (*model.JobRun, error) {
+// Start one new Run from a given job
+func (re *SimpleRunEngine) StartOneRun(job *model.Job, ctx context.Context) (*model.JobRun, error) {
 	re.runningCount.RLock()
 	select {
 	case <-re.conf.Close:

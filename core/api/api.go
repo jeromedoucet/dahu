@@ -13,7 +13,7 @@ type Api struct {
 	conf       *configuration.Conf
 	router     *route.DynamicRouter
 	repository persistence.Repository
-	runEngine  *run.RunEngine
+	runEngine  run.RunEngine
 }
 
 func (a *Api) initRouter() {

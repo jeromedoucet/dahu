@@ -363,13 +363,6 @@ func TestRunAJob(t *testing.T) {
 	}
 }
 
-// todo test no job id on run
-// todo test async with ws
-// todo run status endpoint
-// todo test fail when trigger already has an Id
-// return an error when channel is closed
-// todo test that a Run is registered into the base
-
 func getToken(secret string, exp time.Time) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"exp": exp.Unix(),

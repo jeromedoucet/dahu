@@ -51,9 +51,21 @@ func (a *Api) handleJobs(ctx context.Context, w http.ResponseWriter, r *http.Req
 func (a *Api) handleJob(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	// todo handle panic
 	jobId := route.SplitPath(r.URL.Path)[1]
-	j, _ := a.repository.GetJob([]byte(jobId), ctx) // todo handle error
-	res, _ := a.runEngine.StartOneRun(j, ctx)       // todo handle error
-	body, _ := json.Marshal(res)                    // todo handle err
+	var err error
+	var j *model.Job
+	var res *model.JobRun
+	var body []byte
+	j, err = a.repository.GetJob([]byte(jobId), ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	res, err = a.runEngine.StartOneRun(j, ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	body, err = json.Marshal(res) // todo handle err
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "%s", body)
