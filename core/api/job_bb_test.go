@@ -340,22 +340,6 @@ func TestRunAJob(t *testing.T) {
 		t.Fatalf("Expect 200 return code when trying to strigger a Run. "+
 			"Got %d", resp.StatusCode)
 	}
-	var res model.JobRun
-	dec := json.NewDecoder(resp.Body)
-	dec.Decode(&res)
-	tests.RemoveContainer(res.ContainerName)
-	if res.ContainerName == "" {
-		t.Fatal("expect to have an container name but got ''")
-	}
-	if res.Status != model.RUNNING {
-		t.Fatalf("exepct the JobRun status to be %d, but got %d", model.RUNNING, res.Status)
-	}
-	if len(res.Id) == 0 {
-		t.Fatal("expect to have an id but got ''")
-	}
-	if res.StartTime == nil {
-		t.Fatal("expect to have a start time, but got nil")
-	}
 }
 
 func getToken(secret string, exp time.Time) string {

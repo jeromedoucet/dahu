@@ -32,8 +32,8 @@ func (m *mockResponse) WriteHeader(code int) {
 type mockRunEngine struct {
 }
 
-func (re *mockRunEngine) StartOneRun(job *model.Job, ctx context.Context) (*model.JobRun, error) {
-	return nil, errors.New("an error")
+func (re *mockRunEngine) StartOneRun(job *model.Job, ctx context.Context) error {
+	return errors.New("an error")
 }
 
 func (r *mockRunEngine) WaitClose() {

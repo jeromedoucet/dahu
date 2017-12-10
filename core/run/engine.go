@@ -13,7 +13,7 @@ import (
 )
 
 type RunEngine interface {
-	StartOneRun(job *model.Job, ctx context.Context) (*model.JobRun, error)
+	StartOneRun(job *model.Job, ctx context.Context) error
 	WaitClose()
 }
 
@@ -45,31 +45,31 @@ func (r *SimpleRunEngine) WaitClose() {
 }
 
 // Start one new Run from a given job
-func (re *SimpleRunEngine) StartOneRun(job *model.Job, ctx context.Context) (*model.JobRun, error) {
+func (re *SimpleRunEngine) StartOneRun(job *model.Job, ctx context.Context) error {
 	re.runningCount.RLock()
 	select {
 	case <-re.conf.Close:
 		re.runningCount.RUnlock()
-		return nil, errors.New("run >> the application is shutting down. Operation impossible.")
+		return errors.New("run >> the application is shutting down. Operation impossible.")
 	default:
 		params := newProcessParams(job)
 		if params.Env == nil { // todo test cover me
 			params.Env = make(map[string]string)
 		}
 		params.Env["REPO_URL"] = job.Url // todo test cover me
-		r := NewProcess(params, re.repository)
-		res, err := r.Start(ctx) // todo cover test for error
+		p := NewProcess(params, re.repository)
+		_, err := p.Start(ctx) // todo cover test for error
 		if err == nil {
 			// if the run has started without error
 			// defer the unlock in another goroutine
 			go func() {
 				defer re.runningCount.RUnlock()
-				<-r.Done()
+				<-p.Done()
 			}()
 		} else {
 			re.runningCount.RUnlock()
 		}
-		return &res, err
+		return err
 	}
 }
 

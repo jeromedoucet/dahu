@@ -53,25 +53,15 @@ func (a *Api) handleJob(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	jobId := route.SplitPath(r.URL.Path)[1]
 	var err error
 	var j *model.Job
-	var res *model.JobRun
-	var body []byte
 	j, err = a.repository.GetJob([]byte(jobId), ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	res, err = a.runEngine.StartOneRun(j, ctx)
+	err = a.runEngine.StartOneRun(j, ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	body, err = json.Marshal(res)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "%s", body)
-	w.Write(body)
 }

@@ -8,6 +8,9 @@ import (
 type Pipeline interface {
 }
 
+type simplePipeline struct {
+}
+
 func NewPipeline(job *model.Job, repository persistence.Repository) Pipeline {
 	return nil
 }
