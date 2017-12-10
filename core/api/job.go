@@ -58,7 +58,7 @@ func (a *Api) handleJob(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	err = a.runEngine.StartOneRun(j, ctx)
+	err = a.runEngine.StartOneJob(j, ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

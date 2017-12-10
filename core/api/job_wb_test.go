@@ -32,7 +32,7 @@ func (m *mockResponse) WriteHeader(code int) {
 type mockRunEngine struct {
 }
 
-func (re *mockRunEngine) StartOneRun(job *model.Job, ctx context.Context) error {
+func (re *mockRunEngine) StartOneJob(job *model.Job, ctx context.Context) error {
 	return errors.New("an error")
 }
 

@@ -13,7 +13,7 @@ import (
 )
 
 type RunEngine interface {
-	StartOneRun(job *model.Job, ctx context.Context) error
+	StartOneJob(job *model.Job, ctx context.Context) error
 	WaitClose()
 }
 
@@ -45,7 +45,7 @@ func (r *SimpleRunEngine) WaitClose() {
 }
 
 // Start one new Run from a given job
-func (re *SimpleRunEngine) StartOneRun(job *model.Job, ctx context.Context) error {
+func (re *SimpleRunEngine) StartOneJob(job *model.Job, ctx context.Context) error {
 	re.runningCount.RLock()
 	select {
 	case <-re.conf.Close:
