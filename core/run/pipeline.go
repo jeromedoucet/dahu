@@ -13,7 +13,14 @@ type Pipeline interface {
 }
 
 func NewPipeline(job *model.Job, repository persistence.Repository) Pipeline {
-	// todo choose the implementation witch firt the job
+	// todo choose the implementation witch fit the job
 	pipeline := simplePipeline{repository: repository, job: job}
 	return &pipeline
+}
+
+// fetch the code from a distant repo
+// and return the name of the named volume
+func fetchCode(imageName string, env map[string]string) string {
+	// todo generate a named volume
+	return ""
 }

@@ -48,7 +48,7 @@ func (re *SimpleRunEngine) StartOneJob(job *model.Job, ctx context.Context) erro
 	select {
 	case <-re.conf.Close:
 		re.runningCount.RUnlock()
-		return errors.New("run >> the application is shutting down. Operation impossible.")
+		return errors.New("engine >> the application is shutting down. Operation impossible.")
 	default:
 		pipeline := NewPipeline(job, re.repository)
 		err := pipeline.Start(ctx)
