@@ -10,6 +10,8 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# specific Output for this project
 todo
 dahu-server
+dahu
 vendor/*/

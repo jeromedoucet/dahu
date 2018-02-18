@@ -27,6 +27,7 @@ func (a *Api) Handler() http.Handler {
 	return a.router
 }
 
+// todo pass a context for timeout
 func (a *Api) Close() {
 	// close the run engine
 	// then wait for the repository
