@@ -27,16 +27,14 @@ Dahu is a CI / CD plateform build with an obsession : simplicity. Why ?
 
 Simplicity means less features. Here are some choices explanations
 
-### No 'CI as code'
+to complete
 
-This feature is very common on modern CI / CD plateform. It allow you to locate the configuration of a build within the code, in the repository.
+## API endpoint
 
-However, such feature do have some drawbacks :
-
- - add a dependency on a specific CI plateform
- - often, not all configuration can be stored on repository (credentials for instance)
- - Doesn't fit very well when many repositories are involve
- - Most of the time, it is not usable locally
- - add a syntax to learn, making the tool less simple to use
-
+ - POST  /jobs create a new Job
+ - GET   /jobs list all available jobs for the authenticated user
+ - POST  /jobs/:jobId/run create a new run of a given job
+ - GET   /jobs/:jobId get the details of a Job
+ - PATCH /jobs/:jobId update a job
+ - POST  /login authenticate a user
 
