@@ -13,6 +13,7 @@ import (
 
 // handle request on jobs/
 func (a *Api) handleJobs(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// recover from any panic coming form /jobs requests
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("WARN >> handleJobs encounter error : %+v", r)
@@ -21,30 +22,58 @@ func (a *Api) handleJobs(ctx context.Context, w http.ResponseWriter, r *http.Req
 	}()
 	err := a.checkToken(r)
 	if err == nil {
-		var reqJob model.Job
-		d := json.NewDecoder(r.Body)
-		d.Decode(&reqJob)
-		if !reqJob.IsValid() {
-			log.Printf("WARN >> handleJobs encounter error : %+v is not valid", reqJob)
-			w.WriteHeader(http.StatusBadRequest)
-			return
+		if r.Method == http.MethodPost {
+			a.onCreateJob(ctx, w, r)
+		} else if r.Method == http.MethodGet {
+			a.onGetJobs(ctx, w, r)
+		} else {
+			// todo return appropriate http code with a corresponding test
 		}
-		var newJob *model.Job
-		newJob, err = a.repository.CreateJob(&reqJob, ctx)
-		if err != nil {
-			log.Printf("WARN >> handleJobs encounter error : %s", err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		body, _ := json.Marshal(newJob) // todo handle err
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		fmt.Fprintf(w, "%s", body)
-		w.Write(body)
 	} else {
 		log.Printf("WARN >> handleJobs encounter error : %s ", err.Error())
 		w.WriteHeader(http.StatusUnauthorized)
 	}
+}
+
+func (a *Api) onCreateJob(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var reqJob model.Job
+	var err error
+	d := json.NewDecoder(r.Body)
+	d.Decode(&reqJob)
+	if !reqJob.IsValid() {
+		log.Printf("ERROR >> createJob encounter error : %+v is not valid", reqJob)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	var newJob *model.Job
+	newJob, err = a.repository.CreateJob(&reqJob, ctx)
+	if err != nil {
+		log.Printf("ERROR >> createJob encounter error : %s", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	body, _ := json.Marshal(newJob) // todo handle err
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, "%s", body)
+	w.Write(body)
+}
+
+func (a *Api) onGetJobs(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// todo add tests
+	var err error
+	var jobs []*model.Job
+	jobs, err = a.repository.GetJobs(ctx)
+	if err != nil {
+		log.Printf("ERROR >> GetJobs encounter error : %s", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	body, _ := json.Marshal(jobs) // todo handle err
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "%s", body)
+	w.Write(body)
 }
 
 // handle requests on jobs/{jobId}/

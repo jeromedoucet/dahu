@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Pallinder/go-randomdata"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jeromedoucet/dahu/configuration"
 	"github.com/jeromedoucet/dahu/core/api"
@@ -28,6 +29,30 @@ func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
 	// when
 	resp, err := http.Post(fmt.Sprintf("%s/jobs", s.URL),
 		"application/json", bytes.NewBuffer(body))
+
+	// shutdown server and db gracefully
+	s.Close()
+	tests.CleanPersistence(conf)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+
+	if resp.StatusCode != 401 {
+		t.Fatalf("Expect 401 return code when trying to create a job "+
+			"without a token. Got %d", resp.StatusCode)
+	}
+}
+
+func TestListJobsShouldReturn401WithoutAToken(t *testing.T) {
+	// given
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+
+	// when
+	resp, err := http.Get(fmt.Sprintf("%s/jobs", s.URL))
 
 	// shutdown server and db gracefully
 	s.Close()
@@ -79,6 +104,39 @@ func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
 	}
 }
 
+func TestListJobsShouldReturn401WhenBadCredentials(t *testing.T) {
+	// given
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+
+	// request setup
+	tokenStr := getToken("other_secret", time.Now().Add(1*time.Minute))
+	req := buildJobsGetReq(tokenStr, s.URL)
+
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+	// shutdown server and db gracefully
+	s.Close()
+	tests.CleanPersistence(conf)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != 401 {
+		t.Fatalf("Expect 401 return code when trying to create a job with bad credentials"+
+			"without a token. Got %d", resp.StatusCode)
+	}
+}
+
 func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 	// given
 
@@ -95,6 +153,39 @@ func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 	body, _ := json.Marshal(job)
 	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(-1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
+
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+	// shutdown server and db gracefully
+	s.Close()
+	tests.CleanPersistence(conf)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != 401 {
+		t.Fatalf("Expect 401 return code when trying to create a job with outdated credentials"+
+			"without a token. Got %d", resp.StatusCode)
+	}
+}
+
+func TestListJobsShouldReturn401WhenTokenOutDated(t *testing.T) {
+	// given
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+
+	// request setup
+	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(-1*time.Minute))
+	req := buildJobsGetReq(tokenStr, s.URL)
 
 	cli := &http.Client{}
 
@@ -301,6 +392,48 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	}
 }
 
+func TestListJobsShouldReturnAllJobs(t *testing.T) {
+	// given
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	jobs := generateJobs(4)
+	for _, job := range jobs {
+		tests.InsertObject(conf, []byte("jobs"), []byte(job.Id), job)
+	}
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+
+	// request setup
+	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req := buildJobsGetReq(tokenStr, s.URL)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+	// shutdown server and db gracefully
+	s.Close()
+	tests.CleanPersistence(conf)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("Expect 200 return code when trying to list jobs."+
+			"Got %d", resp.StatusCode)
+	}
+	var dj []model.Job
+	dec := json.NewDecoder(resp.Body)
+	dec.Decode(&dj)
+	if len(dj) != 4 {
+		t.Fatalf("Expect to have %d jobs returned. Got %d", 4, len(dj))
+	}
+}
+
 func TestRunAJob(t *testing.T) {
 	// given
 
@@ -357,11 +490,26 @@ func buildJobsPostReq(body []byte, token string, addr string) *http.Request {
 	return req
 }
 
+func buildJobsGetReq(token string, addr string) *http.Request {
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/jobs", addr), nil)
+	req.Header.Add("Authorization", "Bearer "+token)
+	return req
+}
+
 func buildJobTrigReq(body []byte, token, addr, jobId string) *http.Request {
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/jobs/%s/run",
 		addr, jobId), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+token)
 	return req
+}
+
+func generateJobs(nbJobs int) []model.Job {
+	jobs := make([]model.Job, nbJobs)
+	for i := 0; i < nbJobs; i++ {
+		jobs[i] = model.Job{Name: randomdata.SillyName(), Url: randomdata.IpV4Address(), ImageName: "someImage"}
+		jobs[i].GenerateId()
+	}
+	return jobs
 }
 
 // todo test time out

@@ -245,7 +245,7 @@ func TestUpdateJobRunShouldReturnIncomingJobRunIfNotFound(t *testing.T) {
 
 	// then
 	if j.JobRuns != nil {
-		t.Errorf("expect the JobRuns to be nil but got %d", j.JobRuns)
+		t.Errorf("expect the JobRuns to be nil but got %v", j.JobRuns)
 	}
 	if actualJr.Version != now.UnixNano() {
 		t.Error("expect the returned JobRun version not to have been updated, but it is not the case")
@@ -278,7 +278,7 @@ func TestJobRunIdGenerationShouldBeInErrorIfExistingId(t *testing.T) {
 
 	// then
 	if err == nil {
-		t.Errorf("Expect #GenerateId to return an error, but got nil", err)
+		t.Errorf("Expect #GenerateId to return an error, but got nil")
 	}
 	if string(jr.Id) != "existingId" {
 		t.Errorf("expect the Id not to have changed, but got %s", string(jr.Id))
@@ -311,7 +311,7 @@ func TestJobIdGenerationShouldBeInErrorIfExistingId(t *testing.T) {
 
 	// then
 	if err == nil {
-		t.Errorf("Expect #GenerateId to return an error, but got nil", err)
+		t.Errorf("Expect #GenerateId to return an error, but got nil")
 	}
 	if string(j.Id) != "existingId" {
 		t.Errorf("expect the Id not to have changed, but got %s", string(j.Id))

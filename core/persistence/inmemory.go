@@ -209,6 +209,34 @@ func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {
 	}
 }
 
+func (i *inMemory) GetJobs(ctx context.Context) ([]*model.Job, error) {
+	// todo add missing tests
+	jobs := make([]*model.Job, 0)
+	err := i.doViewAction(func(tx *bolt.Tx) error {
+		var job model.Job
+		b := tx.Bucket([]byte("jobs"))
+		if b == nil {
+			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
+		}
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			fmt.Println(fmt.Sprintf("persistence >> DEBUG. GetJobs: fetched value : %s, with key %s which is valid : %v", v, k, json.Valid(v)))
+			mErr := json.Unmarshal(v, &job)
+			if mErr != nil {
+				return mErr
+			} else {
+				jobs = append(jobs, &job)
+			}
+		}
+		return nil
+	})
+	if err == nil {
+		return jobs, nil
+	} else {
+		return nil, err
+	}
+}
+
 func (i *inMemory) GetUser(id []byte, ctx context.Context) (*model.User, error) {
 	var user model.User
 	err := i.doViewAction(func(tx *bolt.Tx) error {

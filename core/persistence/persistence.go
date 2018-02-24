@@ -19,6 +19,9 @@ type Repository interface {
 	// get an existing job identified by the id parameter.
 	GetJob(id []byte, ctx context.Context) (*model.Job, error)
 
+	// get all existing jobs
+	GetJobs(ctx context.Context) ([]*model.Job, error)
+
 	// get an existing user identified by the id parameter.
 	GetUser(id []byte, ctx context.Context) (*model.User, error)
 
