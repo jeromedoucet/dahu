@@ -213,28 +213,35 @@ func (i *inMemory) GetJobs(ctx context.Context) ([]*model.Job, error) {
 	// todo add missing tests
 	jobs := make([]*model.Job, 0)
 	err := i.doViewAction(func(tx *bolt.Tx) error {
-		var job model.Job
+		var mErr error
 		b := tx.Bucket([]byte("jobs"))
 		if b == nil {
 			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
 		}
 		c := b.Cursor()
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			fmt.Println(fmt.Sprintf("persistence >> DEBUG. GetJobs: fetched value : %s, with key %s which is valid : %v", v, k, json.Valid(v)))
-			mErr := json.Unmarshal(v, &job)
-			if mErr != nil {
-				return mErr
-			} else {
-				jobs = append(jobs, &job)
-			}
-		}
-		return nil
+		jobs, mErr = doFetchJobs(c, jobs)
+		return mErr
 	})
 	if err == nil {
 		return jobs, nil
 	} else {
 		return nil, err
 	}
+}
+
+func doFetchJobs(c *bolt.Cursor, jobs []*model.Job) ([]*model.Job, error) {
+	var job model.Job
+	res := jobs
+	for k, v := c.First(); k != nil; k, v = c.Next() {
+		fmt.Println(fmt.Sprintf("persistence >> DEBUG. GetJobs: fetched value : %s, with key %s which is valid : %v", v, k, json.Valid(v)))
+		mErr := json.Unmarshal(v, &job)
+		if mErr != nil {
+			return nil, mErr
+		} else {
+			res = append(res, &job)
+		}
+	}
+	return res, nil
 }
 
 func (i *inMemory) GetUser(id []byte, ctx context.Context) (*model.User, error) {
