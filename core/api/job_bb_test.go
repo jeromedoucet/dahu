@@ -16,7 +16,6 @@ import (
 	"github.com/jeromedoucet/dahu/core/api"
 	"github.com/jeromedoucet/dahu/core/model"
 	"github.com/jeromedoucet/dahu/tests"
-	"github.com/jeromedoucet/go-common/collections"
 )
 
 func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
@@ -430,7 +429,10 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 	var dj []model.Job
 	dec := json.NewDecoder(resp.Body)
 	dec.Decode(&dj)
-	mappedJob, _ := collections.FromArrayToMap(dj, "Name")
+	mappedJob := make(map[string]model.Job)
+	for _, job := range dj {
+		mappedJob[string(job.Id)] = job
+	}
 
 	if len(dj) != len(jobs) {
 		t.Fatalf("Expect to have %d jobs returned. Got %d", len(jobs), len(dj))
@@ -438,9 +440,9 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 
 	// verify the content of returned job
 	for _, job := range jobs {
-		j, _ := mappedJob[interface{}(job.Name)].(model.Job)
-		if string(job.Id) != string(j.Id) {
-			t.Fatalf("Expect to have a job with Id %s but got %s", job.Id, j.Id)
+		j, _ := mappedJob[string(job.Id)]
+		if string(job.Name) != string(j.Name) {
+			t.Fatalf("Expect to have a job with Id %s but got %s", job.Name, j.Name)
 		}
 		if job.Url != j.Url {
 			t.Fatalf("Expect to have a job with Url %s but got %s", job.Url, j.Url)

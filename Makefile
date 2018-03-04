@@ -20,7 +20,7 @@ $(APP_NAME):
 test: all
 	@echo "Running tests..."
 	docker build -t dahuci/job-test -f images/test/Dockerfile images/test
-	go test -cover ./...
+	go test -coverprofile=coverage.out ./...
 
 clean:
 	rm -f $(APP_NAME)
