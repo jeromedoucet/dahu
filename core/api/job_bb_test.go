@@ -16,6 +16,7 @@ import (
 	"github.com/jeromedoucet/dahu/core/api"
 	"github.com/jeromedoucet/dahu/core/model"
 	"github.com/jeromedoucet/dahu/tests"
+	"github.com/jeromedoucet/go-common/collections"
 )
 
 func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
@@ -429,8 +430,24 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 	var dj []model.Job
 	dec := json.NewDecoder(resp.Body)
 	dec.Decode(&dj)
-	if len(dj) != 4 {
-		t.Fatalf("Expect to have %d jobs returned. Got %d", 4, len(dj))
+	mappedJob, _ := collections.FromArrayToMap(dj, "Name")
+
+	if len(dj) != len(jobs) {
+		t.Fatalf("Expect to have %d jobs returned. Got %d", len(jobs), len(dj))
+	}
+
+	// verify the content of returned job
+	for _, job := range jobs {
+		j, _ := mappedJob[interface{}(job.Name)].(model.Job)
+		if string(job.Id) != string(j.Id) {
+			t.Fatalf("Expect to have a job with Id %s but got %s", job.Id, j.Id)
+		}
+		if job.Url != j.Url {
+			t.Fatalf("Expect to have a job with Url %s but got %s", job.Url, j.Url)
+		}
+		if job.ImageName != j.ImageName {
+			t.Fatalf("Expect to have a job with ImageName %s but got %s", job.ImageName, j.ImageName)
+		}
 	}
 }
 

@@ -15,6 +15,12 @@
 			"revisionTime": "2017-10-19T21:57:19Z"
 		},
 		{
+			"checksumSHA1": "eOdVNRMhy55nsnZUHMXXUxfi6k8=",
+			"path": "github.com/jeromedoucet/go-common/collections",
+			"revision": "ec6e8b0e60a503f65e5adf665230a61211b0e8c2",
+			"revisionTime": "2018-03-03T12:12:34Z"
+		},
+		{
 			"checksumSHA1": "0D1LWeoG7jgogWBhT9crwlaD5XY=",
 			"path": "github.com/jeromedoucet/route",
 			"revision": "58f86f06921b526c394dfcada43b63ada3966eb5",
