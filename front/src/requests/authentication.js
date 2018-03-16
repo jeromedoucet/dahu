@@ -16,7 +16,7 @@ export function authenticate(identifier, password) {
   })
     .then(handleResponse)
     .then(token => {
-      login(token.value)
+      login(token.value);
     })
   ;
 }
