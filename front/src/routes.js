@@ -9,9 +9,17 @@ export const routes = [
 ]
 
 export function checkAuthenticationBeforeNavigation(to, from, next) {
-  if(isAuthenticated() || to.path === '/login') {
-    next();
+  if(isAuthenticated()) {
+    if(to.path === '/login') {
+      next('/');
+    } else {
+      next();
+    }
   } else {
-    next('/login');
+    if(to.path === '/login') {
+      next();
+    } else {
+      next('/login');
+    }
   }
 }

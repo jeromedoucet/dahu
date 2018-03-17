@@ -54,5 +54,19 @@ describe('routes', () => {
       expect(next.mock.calls.length).toBe(1);
       expect(next.mock.calls[0].length).toBe(0);
     });
+
+    it('should allow redirect to home if the user is authenticated but the destination is Login', () => {
+      // given
+      const to = { path: '/login'};
+      const from = {};
+      user.isAuthenticated.mockReturnValue(true);
+
+      // when
+      checkAuthenticationBeforeNavigation(to, from, next);
+
+      // then
+      expect(next.mock.calls.length).toBe(1);
+      expect(next.mock.calls[0][0]).toBe('/');
+    });
   })
 });
