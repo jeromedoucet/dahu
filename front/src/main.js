@@ -1,14 +1,26 @@
-import Vue from 'vue';
+import App from './App.vue'
+import BootstrapVue from 'bootstrap-vue'
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap-vue/dist/bootstrap-vue.css'
+import Vue from 'vue/dist/vue.js';
 import VueRouter from 'vue-router';
-import { routes } from './routes';
+import { 
+  routes,
+  checkAuthenticationBeforeNavigation
+} from './routes';
 
-import App from './App.vue';
-
+Vue.use(BootstrapVue);
 Vue.config.productionTip = false;
+
+Vue.use(VueRouter)
 const router = new VueRouter({
   routes
 })
+router.beforeEach(checkAuthenticationBeforeNavigation);
 
 new Vue({
- router
-}).$mount('#app');
+  el: '#app',
+  template: '<App/>',
+  components: { App },
+  router
+});
