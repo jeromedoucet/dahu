@@ -1,14 +1,10 @@
 import fetchMock from "fetch-mock";
-import * as user from '@/services/user';
 import { authenticate } from '@/requests/authentication';
-
-user.login = jest.fn()
 
 describe('authentication requests', () => {
   
   beforeEach(() => {
     fetchMock.restore();
-    user.login.mockClear();
   });
 
   it('authenticate the user successfuly', async () => {

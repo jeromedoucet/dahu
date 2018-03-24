@@ -1,6 +1,3 @@
-import { login } from '@/services/user';
-
-
 function handleResponse(res) {
   if (!res.ok) {
     return Promise.reject(new Error(res.status));
