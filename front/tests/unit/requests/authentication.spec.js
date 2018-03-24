@@ -25,9 +25,7 @@ describe('authentication requests', () => {
       body: { value: "someToken" }
     });
 
-    await authenticate(identifier, password);
-    expect(user.login.mock.calls.length).toBe(1);
-    expect(user.login.mock.calls[0][0]).toBe('someToken');
+    await expect(authenticate(identifier, password)).resolves.toEqual('someToken');;
   });
   it('authenticate the user un-successfuly', async () => {
     const identifier = 'tester';
@@ -42,6 +40,5 @@ describe('authentication requests', () => {
     fetchMock.postOnce(postAttachmentMatcher, 403);
 
     await expect(authenticate(identifier, password)).rejects.toThrow('403');
-    expect(user.login.mock.calls.length).toBe(0);
   });
 });
