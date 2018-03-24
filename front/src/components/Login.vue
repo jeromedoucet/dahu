@@ -3,7 +3,7 @@
     <b-row id="login-row" class="justify-content-md-center">
       <b-col cols="4">
         <b-form @submit="onSubmit">
-          <h2>Authentication</h2>
+          <h2 class="text">Authentication</h2>
           <b-form-group>
             <b-form-input id="login-identifier-field"
                           type="text"
@@ -65,11 +65,5 @@ export default {
 <style scoped>
 #login-row {
   padding-top: 1.5rem;
-}
-form {
-  border-style: solid;
-  border-width: thin;
-  border-radius: 25% 10%;
-  padding: 1rem;
 }
 </style>
