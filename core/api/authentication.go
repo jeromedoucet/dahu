@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -17,6 +18,7 @@ func (a *Api) handleAuthentication(ctx context.Context, w http.ResponseWriter, r
 	d.Decode(&l) // todo handle this error
 	u, err := a.repository.GetUser(l.Id, ctx)
 	if err != nil {
+		log.Printf("INFO >> handleAuthentication unknown user id %v for authentication", string(l.Id))
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}

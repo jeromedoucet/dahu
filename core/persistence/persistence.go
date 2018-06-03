@@ -23,7 +23,7 @@ type Repository interface {
 	GetJobs(ctx context.Context) ([]*model.Job, error)
 
 	// get an existing user identified by the id parameter.
-	GetUser(id []byte, ctx context.Context) (*model.User, error)
+	GetUser(id string, ctx context.Context) (*model.User, error)
 
 	// will persist a jobRun on an existing Job.
 	CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.Context) (*model.JobRun, error)

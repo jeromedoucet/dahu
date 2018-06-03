@@ -13,7 +13,7 @@ var regexPassword *regexp.Regexp = regexp.MustCompile(".{12}")
 // type used for authentication
 // on /login
 type Login struct {
-	Id       []byte `json:"id"`
+	Id       string `json:"id"`
 	Password []byte `json:"password"`
 }
 
