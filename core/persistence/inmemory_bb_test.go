@@ -136,7 +136,7 @@ func TestGetUserShouldReturnTheUserWhenItExists(t *testing.T) {
 	rep := persistence.GetRepository(c)
 
 	// when
-	actualUser, err := rep.GetUser([]byte(u.Login), ctx)
+	actualUser, err := rep.GetUser(u.Login, ctx)
 
 	// close and remove the db
 	tests.CleanPersistence(c)
@@ -162,7 +162,7 @@ func TestGetUserShouldReturnAnErrorWhenItDoesntExist(t *testing.T) {
 	rep := persistence.GetRepository(c)
 
 	// when
-	actualUser, err := rep.GetUser([]byte(u.Login), ctx)
+	actualUser, err := rep.GetUser(u.Login, ctx)
 
 	// close and remove the db
 	tests.CleanPersistence(c)
@@ -191,7 +191,7 @@ func TestGetUserShouldReturnAnErrorWhenNoBucket(t *testing.T) {
 	rep := persistence.GetRepository(c)
 
 	// when
-	actualUser, err := rep.GetUser([]byte(u.Login), ctx)
+	actualUser, err := rep.GetUser(u.Login, ctx)
 
 	// close and remove the db
 	tests.CleanPersistence(c)

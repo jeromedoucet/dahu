@@ -39,20 +39,7 @@ func createInMemory(conf *configuration.Conf) {
 	inMemorySingleton.conf = conf
 	inMemorySingleton.rwMutex = &sync.RWMutex{}
 	db, _ := bolt.Open(conf.PersistenceConf.Name, 0600, nil) // todo handle this error
-	db.Update(func(tx *bolt.Tx) error {
-		var err error
-		_, err = tx.CreateBucketIfNotExists([]byte("jobs"))
-		if err != nil {
-			// todo test me
-			return fmt.Errorf("create bucket: %s", err)
-		}
-		_, err = tx.CreateBucketIfNotExists([]byte("users"))
-		if err != nil {
-			// todo test me
-			return fmt.Errorf("create bucket: %s", err)
-		}
-		return nil
-	})
+	dbInitialization(db)
 	inMemorySingleton.db = db
 	go func() {
 		<-inMemorySingleton.conf.Close
@@ -67,6 +54,24 @@ func createInMemory(conf *configuration.Conf) {
 		inMemorySingleton.db.Close() // todo handle this error
 		inMemorySingleton = nil
 	}()
+}
+
+func dbInitialization(db *bolt.DB) {
+	db.Update(createBucketsIfNeeded)
+}
+
+// todo test me with errors case
+func createBucketsIfNeeded(tx *bolt.Tx) error {
+	var err error
+	_, err = tx.CreateBucketIfNotExists([]byte("jobs"))
+	if err != nil {
+		return fmt.Errorf("ERROR >> job bucket creation failed : %s", err)
+	}
+	_, err = tx.CreateBucketIfNotExists([]byte("users"))
+	if err != nil {
+		return fmt.Errorf("ERROR >> user bucket creation failed : %s", err)
+	}
+	return nil
 }
 
 // In memory implementation
