@@ -57,11 +57,13 @@ func createInMemory(conf *configuration.Conf) {
 }
 
 func dbInitialization(db *bolt.DB) {
-	db.Update(createBucketsIfNeeded)
+	db.Update(func(tx *bolt.Tx) error {
+		return createBucketsIfNeeded(tx)
+	})
 }
 
 // todo test me with errors case
-func createBucketsIfNeeded(tx *bolt.Tx) error {
+func createBucketsIfNeeded(tx bucketCreationTransaction) error {
 	var err error
 	_, err = tx.CreateBucketIfNotExists([]byte("jobs"))
 	if err != nil {
