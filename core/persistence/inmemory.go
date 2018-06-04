@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path"
 	"sync"
 	"time"
 
@@ -38,28 +40,56 @@ func createInMemory(conf *configuration.Conf) {
 	inMemorySingleton = new(inMemory)
 	inMemorySingleton.conf = conf
 	inMemorySingleton.rwMutex = &sync.RWMutex{}
+	newDb := isNewDb(conf.PersistenceConf.Name)
 	db, _ := bolt.Open(conf.PersistenceConf.Name, 0600, nil) // todo handle this error
 	dbInitialization(db)
+	if newDb {
+		defaultUserCreation(db)
+	}
 	inMemorySingleton.db = db
-	go func() {
-		<-inMemorySingleton.conf.Close
-		// when closing, the first thing
-		// is to avoid any new call on #getOrCreateInMemory
-		singletonMutex.Lock()
-		defer singletonMutex.Unlock()
-		// take a write lock. It permit to wait that all current
-		// transaction finished
-		inMemorySingleton.rwMutex.Lock()
-		defer inMemorySingleton.rwMutex.Unlock()
-		inMemorySingleton.db.Close() // todo handle this error
-		inMemorySingleton = nil
-	}()
+	go waitForGracefullShutdown()
+}
+
+func isNewDb(dbName string) bool {
+	ex, _ := os.Executable()
+	dir := path.Dir(ex)
+	_, err := os.Stat(dir + "/" + dbName)
+	return os.IsNotExist(err)
 }
 
 func dbInitialization(db *bolt.DB) {
 	db.Update(func(tx *bolt.Tx) error {
 		return createBucketsIfNeeded(tx)
 	})
+}
+
+// will insert the default user.
+// should only be used if a previous call
+// of isNewDb has returned true !
+func defaultUserCreation(db *bolt.DB) {
+	db.Update(func(tx *bolt.Tx) error {
+		u := model.User{Login: "dahu"}
+		u.SetPassword([]byte("dahuDefaultPassword"))
+		b, _ := tx.CreateBucketIfNotExists([]byte("users"))
+		var data []byte
+		data, _ = json.Marshal(u)
+		b.Put([]byte(u.Login), data)
+		return nil
+	})
+}
+
+func waitForGracefullShutdown() {
+	<-inMemorySingleton.conf.Close
+	// when closing, the first thing
+	// is to avoid any new call on #getOrCreateInMemory
+	singletonMutex.Lock()
+	defer singletonMutex.Unlock()
+	// take a write lock. It permit to wait that all current
+	// transaction finished
+	inMemorySingleton.rwMutex.Lock()
+	defer inMemorySingleton.rwMutex.Unlock()
+	inMemorySingleton.db.Close() // todo handle this error
+	inMemorySingleton = nil
 }
 
 // todo test me with errors case
@@ -187,17 +217,6 @@ func (i *inMemory) UpdateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.
 	}
 }
 
-func getExistingJob(tx *bolt.Tx, jobId []byte) (*model.Job, error) {
-	b := tx.Bucket([]byte("jobs"))
-	if b == nil {
-		return nil, errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
-	}
-	var job model.Job
-	jobData := b.Get(jobId)
-	err := json.Unmarshal(jobData, &job) // todo handle this error
-	return &job, err
-}
-
 func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {
 	var job model.Job
 	err := i.doViewAction(func(tx *bolt.Tx) error {
@@ -236,21 +255,6 @@ func (i *inMemory) GetJobs(ctx context.Context) ([]*model.Job, error) {
 	}
 }
 
-func doFetchJobs(c *bolt.Cursor, jobs []*model.Job) ([]*model.Job, error) {
-	res := jobs
-	for k, v := c.First(); k != nil; k, v = c.Next() {
-		var job model.Job
-		fmt.Println(fmt.Sprintf("persistence >> DEBUG. GetJobs: fetched value : %s, with key %s which is valid : %v", v, k, json.Valid(v)))
-		mErr := json.Unmarshal(v, &job)
-		if mErr != nil {
-			return nil, mErr
-		} else {
-			res = append(res, &job)
-		}
-	}
-	return res, nil
-}
-
 func (i *inMemory) GetUser(id string, ctx context.Context) (*model.User, error) {
 	var user model.User
 	err := i.doViewAction(func(tx *bolt.Tx) error {
@@ -267,6 +271,32 @@ func (i *inMemory) GetUser(id string, ctx context.Context) (*model.User, error) 
 	} else {
 		return nil, err
 	}
+}
+
+func getExistingJob(tx *bolt.Tx, jobId []byte) (*model.Job, error) {
+	b := tx.Bucket([]byte("jobs"))
+	if b == nil {
+		return nil, errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
+	}
+	var job model.Job
+	jobData := b.Get(jobId)
+	err := json.Unmarshal(jobData, &job) // todo handle this error
+	return &job, err
+}
+
+func doFetchJobs(c *bolt.Cursor, jobs []*model.Job) ([]*model.Job, error) {
+	res := jobs
+	for k, v := c.First(); k != nil; k, v = c.Next() {
+		var job model.Job
+		fmt.Println(fmt.Sprintf("persistence >> DEBUG. GetJobs: fetched value : %s, with key %s which is valid : %v", v, k, json.Valid(v)))
+		mErr := json.Unmarshal(v, &job)
+		if mErr != nil {
+			return nil, mErr
+		} else {
+			res = append(res, &job)
+		}
+	}
+	return res, nil
 }
 
 // doUpdateAction will ensure that the

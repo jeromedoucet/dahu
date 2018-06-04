@@ -22,7 +22,7 @@ func (a *Api) handleAuthentication(ctx context.Context, w http.ResponseWriter, r
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	err = u.ComparePassword(l.Password)
+	err = u.ComparePassword([]byte(l.Password))
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -33,7 +33,6 @@ func (a *Api) handleAuthentication(ctx context.Context, w http.ResponseWriter, r
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "%s", body)
-	w.Write(body)
 }
 
 func createToken(secret string, exp time.Time) string {

@@ -32,7 +32,7 @@ func TestAuthenticationShouldReturn200AndAToken(t *testing.T) {
 
 	// start the server and setup the request
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
-	l := model.Login{Id: u.Login, Password: []byte(password)}
+	l := model.Login{Id: u.Login, Password: password}
 	body, _ := json.Marshal(l)
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login",
 		s.URL), bytes.NewBuffer(body))
@@ -89,7 +89,7 @@ func TestAuthenticationShouldReturn404AndNoTokenWhenNoUserFound(t *testing.T) {
 
 	// start the server and setup the request
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
-	l := model.Login{Id: u.Login, Password: []byte(password)}
+	l := model.Login{Id: u.Login, Password: password}
 	body, _ := json.Marshal(l)
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login",
 		s.URL), bytes.NewBuffer(body))
@@ -134,7 +134,7 @@ func TestAuthenticationShouldReturn401AndNoTokenWhenBadPassword(t *testing.T) {
 
 	// start the server and setup the request
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
-	l := model.Login{Id: u.Login, Password: []byte("totototototototototototo")}
+	l := model.Login{Id: u.Login, Password: "totototototototototototo"}
 	body, _ := json.Marshal(l)
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login",
 		s.URL), bytes.NewBuffer(body))

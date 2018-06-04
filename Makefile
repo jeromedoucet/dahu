@@ -1,4 +1,5 @@
 APP_NAME = dahu-server
+DB_NAME = dahu
 VERSION = $(shell git rev-parse --short HEAD)
 ARCH = amd64
 OS = $(DAHU_OS_TARGET)
@@ -24,6 +25,7 @@ test: all
 
 clean:
 	rm -f $(APP_NAME)
+	rm -f $(DB_NAME)
 
 re: clean all
 

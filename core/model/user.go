@@ -14,7 +14,7 @@ var regexPassword *regexp.Regexp = regexp.MustCompile(".{12}")
 // on /login
 type Login struct {
 	Id       string `json:"id"`
-	Password []byte `json:"password"`
+	Password string `json:"password"`
 }
 
 // this is the answer to

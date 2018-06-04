@@ -13,6 +13,31 @@ import (
 
 // todo test unicity for user
 
+// test to ensure that a default user is inserted
+// when create the db
+func TestInsertDefaultUser(t *testing.T) {
+	// given
+	c := configuration.InitConf()
+	ctx := context.Background()
+	login := "dahu"
+
+	// when
+	r := persistence.GetRepository(c)
+	actualUser, err := r.GetUser(login, ctx)
+
+	// close and remove the db
+	tests.CleanPersistence(c)
+
+	// then
+	if err != nil {
+		t.Errorf("expect to have no error when finding existing user, but got %s", err.Error())
+	}
+	if actualUser.Login != login {
+		t.Errorf("expect to get user %s but got %s", login, actualUser.String())
+	}
+
+}
+
 // test that we may not try to insert / create
 // a job that already has an id
 func TestCreateJobShouldReturnAnErrorWhenJobHasAnId(t *testing.T) {
