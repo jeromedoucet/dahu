@@ -22,6 +22,14 @@
                           placeholder="Enter password">
             </b-form-input>
           </b-form-group>
+          <b-form-group>
+            <b-alert variant="danger"
+                     dismissible
+                     :show="!!errorMessage"
+                     @dismissed="errorMessage=null">
+              {{errorMessage}}
+            </b-alert>
+          </b-form-group>
           <b-button id="login-submit-button" 
                     type="submit" 
                     size="lg"
@@ -47,7 +55,8 @@ export default {
       form: {
         identifier: '',
         password: ''
-      }
+      },
+      errorMessage: null
     }
   },
   methods: {
@@ -56,6 +65,14 @@ export default {
       authenticate(this.form.identifier, this.form.password)
         .then(token => {
           login(token);
+          this.$router.go('/');
+        })
+        .catch(error => {
+          if (error.message === '401' || error.message === '404') {
+            this.errorMessage = 'Authentication error. Please check your credentials and try again.';
+          } else {
+            this.errorMessage = 'Unknown error. Please contact your administrator.';
+          }
         });
     }
   }

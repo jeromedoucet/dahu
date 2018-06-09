@@ -12,7 +12,7 @@ export function authenticate(identifier, password) {
     body: JSON.stringify({id: identifier, password: password})
   })
     .then(handleResponse)
-    .then(token => {
+    .then(function (token) {
       return token.value;
     })
   ;
