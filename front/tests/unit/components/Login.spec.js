@@ -10,8 +10,8 @@ import Cookies from 'js-cookie';
 import Login from '@/components/Login.vue'
  
 // tested component conf
-const localVue = createLocalVue()
-localVue.use(BootstrapVue)
+const localVue = createLocalVue();
+localVue.use(BootstrapVue);
 localVue.use(VueRouter);
 
 const router = new VueRouter({
