@@ -1,8 +1,9 @@
-import App from './App.vue'
-import BootstrapVue from 'bootstrap-vue'
-import 'bootswatch/dist/superhero/bootstrap.min.css'
-import 'bootstrap-vue/dist/bootstrap-vue.css'
-import './main.scss'
+import App from './App.vue';
+import "font-awesome/css/font-awesome.min.css";
+import BootstrapVue from 'bootstrap-vue';
+import 'bootswatch/dist/superhero/bootstrap.min.css';
+import 'bootstrap-vue/dist/bootstrap-vue.css';
+import './main.scss';
 import Vue from 'vue/dist/vue.js';
 import VueRouter from 'vue-router';
 import { 
@@ -13,10 +14,10 @@ import {
 Vue.use(BootstrapVue);
 Vue.config.productionTip = false;
 
-Vue.use(VueRouter)
+Vue.use(VueRouter);
 const router = new VueRouter({
   routes
-})
+});
 router.beforeEach(checkAuthenticationBeforeNavigation);
 
 new Vue({
