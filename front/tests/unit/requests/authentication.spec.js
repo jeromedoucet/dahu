@@ -21,7 +21,7 @@ describe('authentication requests', () => {
       body: { value: "someToken" }
     });
 
-    await expect(authenticate(identifier, password)).resolves.toEqual('someToken');;
+    await expect(authenticate(identifier, password)).resolves.toEqual('someToken');
   });
   it('authenticate the user un-successfuly', async () => {
     const identifier = 'tester';

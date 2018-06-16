@@ -88,7 +88,6 @@ describe('Login.vue', () => {
     loginCmp = createLogin();
     loginCmp.setData({ form:{ identifier: identifier, password: password }});
     loginCmp.vm.$router.go = jest.fn();
-    const btn = loginCmp.find('#login-submit-button');
     const evt = { preventDefault: jest.fn() };   
 
     // when
@@ -106,7 +105,6 @@ describe('Login.vue', () => {
     loginCmp = createLogin();
     loginCmp.setData({ form:{ identifier: badIdentifier, password: badPassword }});
     loginCmp.vm.$router.go = jest.fn();
-    const btn = loginCmp.find('#login-submit-button');
     const evt = { preventDefault: jest.fn() };   
 
     // when
@@ -124,7 +122,6 @@ describe('Login.vue', () => {
     loginCmp = createLogin();
     loginCmp.setData({ form:{ identifier: identifier, password: badPassword }});
     loginCmp.vm.$router.go = jest.fn();
-    const btn = loginCmp.find('#login-submit-button');
     const evt = { preventDefault: jest.fn() };   
 
     // when
@@ -142,7 +139,6 @@ describe('Login.vue', () => {
     loginCmp = createLogin();
     loginCmp.setData({ form:{ identifier: null, password: null }});
     loginCmp.vm.$router.go = jest.fn();
-    const btn = loginCmp.find('#login-submit-button');
     const evt = { preventDefault: jest.fn() };   
 
     // when

@@ -28,7 +28,7 @@ describe('jobs requests', () => {
       });
 
       // when
-      await expect(fetchJobs()).resolves.toEqual(result);;
+      await expect(fetchJobs()).resolves.toEqual(result);
     });
   });
 });
