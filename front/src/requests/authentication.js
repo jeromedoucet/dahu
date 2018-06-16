@@ -1,10 +1,4 @@
-function handleResponse(res) {
-  if (!res.ok) {
-    return Promise.reject(new Error(res.status));
-  } else {
-    return res.json();
-  }
-}
+import { handleResponse } from '@/requests/utils';
 
 export function authenticate(identifier, password) {
   return fetch('/login', {
@@ -14,6 +8,5 @@ export function authenticate(identifier, password) {
     .then(handleResponse)
     .then(function (token) {
       return token.value;
-    })
-  ;
+    });
 }
