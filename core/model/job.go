@@ -70,9 +70,9 @@ type Job struct {
 	Id        []byte            `json:"id"`
 	Name      string            `json:"name"`
 	Url       string            `json:"url"`
-	ImageName string            `json:"imageName"` // todo change it to a collection
 	EnvParam  map[string]string `json:"parameters"`
 	JobRuns   []*JobRun         `json:"jobRuns"`
+	ImageName string            // todo remove me when creating pipeline and jobs
 	Config    JobConfiguration
 	Scm       Scm
 }
@@ -143,7 +143,7 @@ func (j *Job) GenerateId() error {
 }
 
 func (j *Job) IsValid() bool {
-	if j.Name == "" || j.Url == "" || j.ImageName == "" {
+	if j.Name == "" || j.Url == "" {
 		return false
 	}
 	return true

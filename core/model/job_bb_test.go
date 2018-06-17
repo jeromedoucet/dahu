@@ -10,7 +10,7 @@ import (
 
 func TestIsValidJobReturnTrue(t *testing.T) {
 	// given
-	j := model.Job{Name: "test", Url: "http://test", ImageName: "test"}
+	j := model.Job{Name: "test", Url: "http://test"}
 
 	// when
 	res := j.IsValid()
@@ -23,7 +23,7 @@ func TestIsValidJobReturnTrue(t *testing.T) {
 
 func TestIsValidJobWithoutName(t *testing.T) {
 	// given
-	j := model.Job{Url: "http://test", ImageName: "test"}
+	j := model.Job{Url: "http://test"}
 
 	// when
 	res := j.IsValid()
@@ -36,20 +36,7 @@ func TestIsValidJobWithoutName(t *testing.T) {
 
 func TestIsValidJobWithoutUrl(t *testing.T) {
 	// given
-	j := model.Job{Name: "test", ImageName: "test"}
-
-	// when
-	res := j.IsValid()
-
-	// then
-	if res {
-		t.Error("expect the job to be invalid but is valid")
-	}
-}
-
-func TestIsValidJobWithoutImageName(t *testing.T) {
-	// given
-	j := model.Job{Name: "test", Url: "http://test"}
+	j := model.Job{Name: "test"}
 
 	// when
 	res := j.IsValid()

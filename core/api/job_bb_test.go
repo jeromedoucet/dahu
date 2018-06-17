@@ -20,7 +20,7 @@ import (
 
 func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
 	// given
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
+	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
 	body, _ := json.Marshal(job)
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
@@ -275,41 +275,6 @@ func TestCreateANewJobShouldReturn400WhenNoUrl(t *testing.T) {
 	}
 }
 
-func TestCreateANewJobShouldReturn400WhenNoImage(t *testing.T) {
-	// given
-
-	// configuration
-	conf := configuration.InitConf()
-	conf.ApiConf.Port = 4444
-	conf.ApiConf.Secret = "secret"
-
-	// ap start
-	s := httptest.NewServer(api.InitRoute(conf).Handler())
-
-	// request setup
-	job := model.Job{Url: "git@github.com:jeromedoucet/dahu.git", Name: "dahu"}
-	body, _ := json.Marshal(job)
-	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req := buildJobsPostReq(body, tokenStr, s.URL)
-
-	cli := &http.Client{}
-
-	// when
-	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
-
-	// then
-	if err != nil {
-		t.Fatalf("Expect to have to error, but got %s", err.Error())
-	}
-	if resp.StatusCode != 400 {
-		t.Fatalf("Expect 400 return code when trying to create a job without name. "+
-			"Got %d", resp.StatusCode)
-	}
-}
-
 func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 	// given
 
@@ -325,7 +290,7 @@ func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 	close(conf.Close)
 
 	// request setup
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
+	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
 	body, _ := json.Marshal(job)
 	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -361,7 +326,7 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
+	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
 	body, _ := json.Marshal(job)
 	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -447,9 +412,6 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 		if job.Url != j.Url {
 			t.Fatalf("Expect to have a job with Url %s but got %s", job.Url, j.Url)
 		}
-		if job.ImageName != j.ImageName {
-			t.Fatalf("Expect to have a job with ImageName %s but got %s", job.ImageName, j.ImageName)
-		}
 	}
 }
 
@@ -460,7 +422,7 @@ func TestRunAJob(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/job-test"}
+	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
 	job.EnvParam = make(map[string]string)
 	job.EnvParam["STATUS"] = "success"
 	job.GenerateId()
@@ -525,7 +487,7 @@ func buildJobTrigReq(body []byte, token, addr, jobId string) *http.Request {
 func generateJobs(nbJobs int) []model.Job {
 	jobs := make([]model.Job, nbJobs)
 	for i := 0; i < nbJobs; i++ {
-		jobs[i] = model.Job{Name: randomdata.SillyName(), Url: randomdata.IpV4Address(), ImageName: "someImage"}
+		jobs[i] = model.Job{Name: randomdata.SillyName(), Url: randomdata.IpV4Address()}
 		jobs[i].GenerateId()
 	}
 	return jobs
