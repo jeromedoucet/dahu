@@ -1,9 +1,9 @@
 <template>
   <div id="app">
     <nav-bar/>
-    <b-container fluid>
+    <div id='dahu-content'>
       <router-view></router-view> 
-    </b-container>
+    </div>
   </div>
 </template>
 
@@ -25,6 +25,6 @@ export default {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
+  color: #cccccc;
 }
 </style>
