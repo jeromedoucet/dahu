@@ -25,7 +25,9 @@
           This is a job with no run.
         </p>
       </b-card>
-      <i class="fa fa-plus-circle" aria-hidden="true"></i>
+      <router-link class="new-job" :to="{path: '/jobs/creation', exact: true}">
+        <i class="fa fa-plus-circle" aria-hidden="true"></i>
+      </router-link>
     </div>
   </div>
 </template>
@@ -37,7 +39,6 @@ export default {
 
 <style scoped>
 .jobs {
-  margin-top: 3rem;
   display: flex;
   justify-content: safe center;
 }
@@ -51,13 +52,13 @@ export default {
   color: #ffffff;
   cursor: pointer;
 }
-.jobs .fa-plus-circle {
+.jobs .new-job {
   color: #cccccc;
   font-size: 75px;
   align-self: center;
   margin-left: 50px;
 }
-.jobs .fa-plus-circle:hover {
+.jobs .new-job:hover {
   color: #ffffff;
   cursor: pointer;
 }
