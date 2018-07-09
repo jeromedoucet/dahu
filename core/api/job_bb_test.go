@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/Pallinder/go-randomdata"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/jeromedoucet/dahu/configuration"
 	"github.com/jeromedoucet/dahu/core/api"
 	"github.com/jeromedoucet/dahu/core/model"
@@ -83,7 +82,7 @@ func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
 	// request setup
 	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
-	tokenStr := getToken("other_secret", time.Now().Add(1*time.Minute))
+	tokenStr := tests.GetToken("other_secret", time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
 
 	cli := &http.Client{}
@@ -116,7 +115,7 @@ func TestListJobsShouldReturn401WhenBadCredentials(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	tokenStr := getToken("other_secret", time.Now().Add(1*time.Minute))
+	tokenStr := tests.GetToken("other_secret", time.Now().Add(1*time.Minute))
 	req := buildJobsGetReq(tokenStr, s.URL)
 
 	cli := &http.Client{}
@@ -151,7 +150,7 @@ func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 	// request setup
 	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
-	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(-1*time.Minute))
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(-1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
 
 	cli := &http.Client{}
@@ -184,7 +183,7 @@ func TestListJobsShouldReturn401WhenTokenOutDated(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(-1*time.Minute))
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(-1*time.Minute))
 	req := buildJobsGetReq(tokenStr, s.URL)
 
 	cli := &http.Client{}
@@ -219,7 +218,7 @@ func TestCreateANewJobShouldReturn400WhenNoName(t *testing.T) {
 	// request setup
 	job := model.Job{Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
-	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
 
 	cli := &http.Client{}
@@ -254,7 +253,7 @@ func TestCreateANewJobShouldReturn400WhenNoUrl(t *testing.T) {
 	// request setup
 	job := model.Job{Name: "dahu", ImageName: "dahuci/dahu"}
 	body, _ := json.Marshal(job)
-	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
 
 	cli := &http.Client{}
@@ -292,7 +291,7 @@ func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 	// request setup
 	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
 	body, _ := json.Marshal(job)
-	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
 
 	cli := &http.Client{}
@@ -328,7 +327,7 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	// request setup
 	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
 	body, _ := json.Marshal(job)
-	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
 	cli := &http.Client{}
 
@@ -373,7 +372,7 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsGetReq(tokenStr, s.URL)
 	cli := &http.Client{}
 
@@ -435,7 +434,7 @@ func TestRunAJob(t *testing.T) {
 	// request setup
 	reqBody := model.RunRequest{}
 	body, _ := json.Marshal(reqBody)
-	tokenStr := getToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobTrigReq(body, tokenStr, s.URL, string(job.Id))
 	cli := &http.Client{}
 
@@ -448,20 +447,12 @@ func TestRunAJob(t *testing.T) {
 
 	// then
 	if err != nil {
-		t.Fatalf("Expect to have to error, but got %s", err.Error())
+		t.Fatalf("Expect to have no error, but got %s", err.Error())
 	}
 	if resp.StatusCode != 200 {
 		t.Fatalf("Expect 200 return code when trying to strigger a Run. "+
 			"Got %d", resp.StatusCode)
 	}
-}
-
-func getToken(secret string, exp time.Time) string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"exp": exp.Unix(),
-	})
-	res, _ := token.SignedString([]byte(secret))
-	return res
 }
 
 func buildJobsPostReq(body []byte, token string, addr string) *http.Request {
