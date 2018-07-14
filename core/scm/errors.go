@@ -5,6 +5,7 @@ type ScmErrorType int
 const (
 	BadCredentials ScmErrorType = 1 + iota
 	RepositoryNotFound
+	SshKeyReadingError
 	OtherError
 )
 

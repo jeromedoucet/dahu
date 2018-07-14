@@ -31,11 +31,13 @@ func (s Scm) getImage() string {
 type HttpAuthConfig struct {
 	Url      string `json:"url"`
 	User     string `json:"user"`
-	Password string `json:"password"`
+	Password string `json:"password"` // todo hide that ! (dont't show when get job)
 }
 
 type SshAuthConfig struct {
-	Url string
+	Url         string `json:"url"`
+	Key         string `json:"key"` // todo hide that ! (dont't show when get job)
+	KeyPassword string `json:"keyPassword"`
 }
 
 type GitConfig struct {
@@ -53,7 +55,9 @@ func (g GitConfig) CheckCredentials() scm.ScmError {
 		} else {
 			return git.CheckConnectionWithIdAndPassword(g.HttpAuth.Url, g.HttpAuth.User, g.HttpAuth.Password)
 		}
+	} else if g.SshAuth != nil {
+		return git.CheckConnectionWithPrivateKey(g.SshAuth.Url, g.SshAuth.Key, g.SshAuth.KeyPassword)
 	} else {
-		return nil
+		panic("not implemented yet")
 	}
 }
