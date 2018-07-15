@@ -15,6 +15,7 @@ func (a *Api) handleGitRepositories(ctx context.Context, w http.ResponseWriter, 
 	if tokErr != nil {
 		log.Printf("WARN >> handleGitRepositories encounter error : %s ", tokErr.Error())
 		w.WriteHeader(http.StatusUnauthorized)
+		return
 	}
 	var gitConfig model.GitConfig
 	d := json.NewDecoder(r.Body)
@@ -23,6 +24,8 @@ func (a *Api) handleGitRepositories(ctx context.Context, w http.ResponseWriter, 
 	if err == nil {
 		w.WriteHeader(http.StatusOK)
 	} else {
+		body := []byte(err.Error())
+		w.Header().Set("Content-Type", "text/plain")
 		if err.ErrorType() == scm.RepositoryNotFound {
 			w.WriteHeader(http.StatusNotFound)
 		} else if err.ErrorType() == scm.BadCredentials {
@@ -32,5 +35,6 @@ func (a *Api) handleGitRepositories(ctx context.Context, w http.ResponseWriter, 
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
 		}
+		w.Write(body)
 	}
 }
