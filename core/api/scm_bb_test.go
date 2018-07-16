@@ -32,7 +32,7 @@ func TestCheckWhenNotAuthenticated(t *testing.T) {
 	authConfig := model.SshAuthConfig{Url: "ssh://git@localhost:10022/tester/test-repo.git", Key: ssh_keys.PrivateUnprotected}
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	cli := &http.Client{}
 
@@ -66,7 +66,7 @@ func TestCheckPrivateRepoConfigurationSshWithMissingKey(t *testing.T) {
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 	cli := &http.Client{}
@@ -101,7 +101,7 @@ func TestCheckPrivateRepoConfigurationSshWithUnknownRepository(t *testing.T) {
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 	cli := &http.Client{}
@@ -136,7 +136,7 @@ func TestCheckPrivateRepoConfigurationSshWithBadCredentials(t *testing.T) {
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 	cli := &http.Client{}
@@ -171,7 +171,7 @@ func TestCheckPrivateRepoConfigurationSshWithPasswordUnSuccessfully(t *testing.T
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 	cli := &http.Client{}
@@ -206,7 +206,7 @@ func TestCheckPrivateRepoConfigurationSshWithPasswordSuccessfully(t *testing.T) 
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 	cli := &http.Client{}
@@ -241,7 +241,7 @@ func TestCheckPrivateRepoConfigurationSshWithoutPasswordSuccessfully(t *testing.
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 	cli := &http.Client{}
@@ -276,7 +276,7 @@ func TestCheckPrivateRepoConfigurationHttpBadCredentials(t *testing.T) {
 	gitConfig := model.GitConfig{HttpAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 	cli := &http.Client{}
@@ -311,7 +311,7 @@ func TestCheckPrivateRepoConfigurationHttpUnknowUrl(t *testing.T) {
 	gitConfig := model.GitConfig{HttpAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 	cli := &http.Client{}
@@ -346,7 +346,7 @@ func TestCheckPrivateRepoConfigurationHttpSuccessfully(t *testing.T) {
 	gitConfig := model.GitConfig{HttpAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 	cli := &http.Client{}
@@ -381,7 +381,7 @@ func TestCheckPublicRepoConfigurationHttpSuccessfully(t *testing.T) {
 	gitConfig := model.GitConfig{HttpAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repositorie",
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
 		s.URL), bytes.NewBuffer(body))
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 	cli := &http.Client{}

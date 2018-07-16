@@ -21,7 +21,7 @@ func (a *Api) initRouter() {
 	a.router.HandleFunc("/jobs", a.handleJobs)
 	a.router.HandleFunc("/jobs/:jobId/run", a.handleJob)
 	a.router.HandleFunc("/login", a.handleAuthentication)
-	a.router.HandleFunc("/scm/git/repositorie", a.handleGitRepositories)
+	a.router.HandleFunc("/scm/git/repository", a.handleGitRepositories)
 }
 
 func (a *Api) Handler() http.Handler {
