@@ -6,8 +6,5 @@ export function fetchJobs() {
     method: "GET",
     headers: { Authorization: getToken() }
   })
-    .then(handleResponse)
-    .then(function (jobs) {
-      return jobs;
-    });
+    .then(handleResponse);
 }
