@@ -45,6 +45,6 @@ func InitConf() (c *Conf) {
 	c.PersistenceConf.Name = "dahu"
 	c.ApiConf.Port = 80
 	c.ApiConf.ShutdownTimeOut = 30 * time.Second
-	c.ApiConf.TokenValidityDuration = 5 * time.Minute
+	c.ApiConf.TokenValidityDuration = 12 * time.Hour
 	return
 }
