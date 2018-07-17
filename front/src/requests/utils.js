@@ -1,17 +1,18 @@
 import Cookies from 'js-cookie';
 import { SESSION_COOKIE } from '@/constants'
 
-export function handleResponse(res) {
+export async function handleResponse(res) {
+  const body = await _parseJSON(res);
   if (!res.ok) {
-    return Promise.reject(new Error(res.status));
+    return Promise.reject(new Error(body.msg));
   } else {
-    return _parseJSON(res);
+    return body;
   }
 }
 
 function _parseJSON(response) {
   return response.text().then(function(text) {
-    return text ? JSON.parse(text) : {}
+    return text ? JSON.parse(text) : response.status
   })
 }
 

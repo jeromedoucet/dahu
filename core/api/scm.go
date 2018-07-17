@@ -24,7 +24,7 @@ func (a *Api) handleGitRepositories(ctx context.Context, w http.ResponseWriter, 
 	if err == nil {
 		w.WriteHeader(http.StatusOK)
 	} else {
-		body := []byte(err.Error())
+		body := fromErrorToJson(err)
 		w.Header().Set("Content-Type", "text/plain")
 		if err.ErrorType() == scm.RepositoryNotFound {
 			w.WriteHeader(http.StatusNotFound)
