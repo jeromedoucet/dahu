@@ -29,27 +29,43 @@
 				<b-row class="my-3">
 					<b-col sm="2"><label for="newJobUrlInput">Https url : </label></b-col>
 					<b-col sm="10">
-						<b-form-input id="newJobUrlInput" type="url" required placeholder="https url of your project (should start with 'https://`')">
+						<b-form-input 
+              id="newJobUrlInput" 
+              type="url" 
+              required 
+              v-model="httpForm.url"
+              placeholder="https url of your project (should start with 'https://`')"
+            >
 						</b-form-input>
 					</b-col>
 				</b-row>
 				<b-row class="my-3">
 					<b-col sm="2"><label for="repositoryLoginInput">Login : </label></b-col>
 					<b-col sm="10">
-						<b-form-input id="repositoryLoginInput" type="url" required placeholder="User name that should be used for authentication">
+						<b-form-input 
+              id="repositoryLoginInput" 
+              type="text" 
+              v-model="httpForm.user"
+              placeholder="User name that should be used for authentication"
+            >
 						</b-form-input>
 					</b-col>
 				</b-row>
 				<b-row class="my-3">
 					<b-col sm="2"><label for="repositoryPasswordInput">Password : </label></b-col>
 					<b-col sm="10">
-						<b-form-input id="repositoryPasswordInput" type="url" required placeholder="Password that should be used for authentication">
+						<b-form-input 
+              id="repositoryPasswordInput" 
+              type="password" 
+              v-model="httpForm.password"
+              placeholder="Password that should be used for authentication"
+            >
 						</b-form-input>
 					</b-col>
 				</b-row>
         <b-row class="my-3">
           <b-col sm="2">
-            <b-button v-b-toggle.collapseinfouserpwd :size="sm" variant="link">More info</b-button>
+            <b-button v-b-toggle.collapseinfouserpwd size="sm" variant="link">More info</b-button>
           </b-col>
           <b-col sm="10">
             <b-collapse id="collapseinfouserpwd" class="mt-2 authentication-info">
@@ -73,20 +89,31 @@
 				<b-row class="my-3">
 					<b-col sm="2"><label for="newJobUrlInput">Ssh url : </label></b-col>
 					<b-col sm="10">
-						<b-form-input id="newJobUrlInput" type="url" required placeholder="ssh url of your project (should start with 'xxx@')">
+						<b-form-input 
+              id="newJobUrlInput" 
+              type="text" 
+              required 
+              v-model="sshForm.url"
+              placeholder="ssh url of your project (should start with 'xxx@')"
+            >
 						</b-form-input>
 					</b-col>
 				</b-row>
 				<b-row class="my-3">
 					<b-col sm="2"><label for="sshPrivateKeyInput">Ssh key : </label></b-col>
 					<b-col sm="10">
-						<b-form-textarea id="sshPrivateKeyInput" placeholder="Enter your ssh private key" :rows="3">
+						<b-form-textarea 
+              id="sshPrivateKeyInput" 
+              placeholder="Enter your ssh private key" 
+              v-model="sshForm.key"
+              :rows="3"
+            >
 						</b-form-textarea>
 					</b-col>
         </b-row>
         <b-row class="my-3">
           <b-col sm="2">
-            <b-button v-b-toggle.collapseinfossh :size="sm" variant="link">More info</b-button>
+            <b-button v-b-toggle.collapseinfossh size="sm" variant="link">More info</b-button>
           </b-col>
           <b-col sm="10">
             <b-collapse id="collapseinfossh" class="mt-2 authentication-info">
@@ -121,26 +148,42 @@
           </b-col>
         </b-row>
 			</div>
-			<b-row class="my-3" align-h="end">
+      <b-alert class="test-msg" :show="errorMsg !== ''" variant="danger">An error has happend during test : {{errorMsg}}</b-alert>
+      <b-alert class="test-msg" :show="isSuccess" variant="success">Repository configuration is correct !</b-alert>
+      <b-row class="my-3" align-h="end">
 				<b-col cols="auto">
-					<b-button id="job-test-button" type="button" size="lg" variant="secondary">
-						Test it !
-					</b-button>
+					<button-spin 
+            @click.native="onTest()" 
+            id="job-test-button" 
+            type="button" 
+            variant="secondary"
+            :spinning="testPending"
+            label="Test it!"
+          >
+					</button-spin>
 				</b-col>
 				<b-col cols="auto">
-					<b-button id="job-creation-button" type="submit" size="lg" variant="primary">
-						Create
-          </b-button>
+					<button-spin 
+            id="job-creation-button" 
+            type="submit" 
+            variant="primary"
+            :disabled="testPending"
+            label="Create"
+          >
+          </button-spin>
         </b-col>
       </b-row>
     </b-container>
   </div>
 </template>
 <script>
-// todo : test if case and render
-// todo : add many explanations
-// todo : implements the test 'on the fly'
+import { testRepo } from '@/requests/scm';
+import ButtonSpin from '@/components/controls/ButtonSpin.vue';
+
 export default {
+  components: {
+    ButtonSpin
+  },
   data () {
     return {
       authSchemSelected: null,
@@ -148,7 +191,36 @@ export default {
         { value: null, text: 'No authentication' },
         { value: 'ssh', text: 'Ssh private key' },
         { value: 'user-pwd', text: 'User password tuple' }
-      ]
+      ],
+      sshForm: {
+        url: '',
+        key: '',
+        keyPassword: ''
+      },
+      httpForm: {
+        url: '',
+        user: '',
+        password: ''
+      },
+      errorMsg: '',
+      isSuccess: false,
+      testPending: false
+    }
+  },
+  methods: {
+    onTest: async function () {
+      this.errorMsg = '';
+      this.isSuccess = false;
+      this.testPending = true;
+      const scmConf = this.authSchemSelected === 'ssh' ? { sshAuth: this.sshForm } : { httpAuth: this.httpForm };
+      try {
+        await testRepo(scmConf);
+        this.isSuccess = true;
+      } catch (err) {
+        this.errorMsg = err.message;
+      } finally {
+        this.testPending = false;
+      }
     }
   }
 }
@@ -166,5 +238,8 @@ export default {
 }
 .authentication-info {
   text-align: left;
+}
+.test-msg {
+  margin-top: 1rem;
 }
 </style>
