@@ -1,10 +1,17 @@
 import Cookies from 'js-cookie';
 import { SESSION_COOKIE } from '@/constants'
 
+export class FetchError extends Error {
+  constructor(msg, status) {
+    super(msg);
+    this.status = status;
+  }
+}
+
 export async function handleResponse(res) {
   const body = await _parseJSON(res);
   if (!res.ok) {
-    return Promise.reject(new Error(body.msg));
+    return Promise.reject(new FetchError(body.msg, res.status));
   } else {
     return body;
   }
@@ -12,7 +19,7 @@ export async function handleResponse(res) {
 
 function _parseJSON(response) {
   return response.text().then(function(text) {
-    return text ? JSON.parse(text) : response.status
+    return text ? JSON.parse(text) : '';
   })
 }
 

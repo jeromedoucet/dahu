@@ -1,5 +1,6 @@
 import fetchMock from "fetch-mock";
 import { authenticate } from '@/requests/authentication';
+import { FetchError } from '@/requests/utils';
 
 describe('authentication requests', () => {
   
@@ -35,6 +36,6 @@ describe('authentication requests', () => {
     };
     fetchMock.postOnce(postAttachmentMatcher, 403);
 
-    await expect(authenticate(identifier, password)).rejects.toThrow('403');
+    await expect(authenticate(identifier, password)).rejects.toEqual(new FetchError('', 403));
   });
 });

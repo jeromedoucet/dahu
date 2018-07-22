@@ -3,7 +3,6 @@ import { createLocalVue } from '@vue/test-utils';
 import fetchMock from "fetch-mock";
 import BootstrapVue from 'bootstrap-vue';
 import VueRouter from 'vue-router';
-import flushPromises from 'flush-promises';
 import { isAuthenticated } from '@/services/user';
 import { SESSION_COOKIE } from '@/constants'
 import Cookies from 'js-cookie';
@@ -91,8 +90,7 @@ describe('Login.vue', () => {
     const evt = { preventDefault: jest.fn() };   
 
     // when
-    loginCmp.vm.onSubmit(evt);
-    await flushPromises();
+    await loginCmp.vm.onSubmit(evt);
 
     // then
     expect(isAuthenticated()).toBe(true);
@@ -108,8 +106,7 @@ describe('Login.vue', () => {
     const evt = { preventDefault: jest.fn() };   
 
     // when
-    loginCmp.vm.onSubmit(evt);
-    await flushPromises();
+    await loginCmp.vm.onSubmit(evt);
 
     // then
     expect(isAuthenticated()).toBe(false);
@@ -125,8 +122,7 @@ describe('Login.vue', () => {
     const evt = { preventDefault: jest.fn() };   
 
     // when
-    loginCmp.vm.onSubmit(evt);
-    await flushPromises();
+    await loginCmp.vm.onSubmit(evt);
 
     // then
     expect(isAuthenticated()).toBe(false);
@@ -142,8 +138,7 @@ describe('Login.vue', () => {
     const evt = { preventDefault: jest.fn() };   
 
     // when
-    loginCmp.vm.onSubmit(evt);
-    await flushPromises();
+    await loginCmp.vm.onSubmit(evt);
 
     // then
     expect(isAuthenticated()).toBe(false);
