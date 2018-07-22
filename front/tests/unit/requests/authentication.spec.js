@@ -36,6 +36,6 @@ describe('authentication requests', () => {
     };
     fetchMock.postOnce(postAttachmentMatcher, 403);
 
-    await expect(authenticate(identifier, password)).rejects.toEqual(new FetchError('', 403));
+    await expect(authenticate(identifier, password)).rejects.toEqual(new FetchError({}, 403));
   });
 });

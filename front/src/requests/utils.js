@@ -1,17 +1,17 @@
 import Cookies from 'js-cookie';
 import { SESSION_COOKIE } from '@/constants'
 
-export class FetchError extends Error {
+export class FetchError {
   constructor(msg, status) {
-    super(msg);
     this.status = status;
+    this.message = msg;
   }
 }
 
 export async function handleResponse(res) {
   const body = await _parseJSON(res);
   if (!res.ok) {
-    return Promise.reject(new FetchError(body.msg, res.status));
+    return Promise.reject(new FetchError(body, res.status));
   } else {
     return body;
   }
@@ -19,7 +19,7 @@ export async function handleResponse(res) {
 
 function _parseJSON(response) {
   return response.text().then(function(text) {
-    return text ? JSON.parse(text) : '';
+    return text ? JSON.parse(text) : {};
   })
 }
 

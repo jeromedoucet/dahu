@@ -60,20 +60,19 @@ export default {
     }
   },
   methods: {
-    onSubmit (evt) {
+    onSubmit: async function (evt) {
       evt.preventDefault();
-      authenticate(this.form.identifier, this.form.password)
-        .then(token => {
-          login(token);
-          this.$router.go('/');
-        })
-        .catch(error => {
-          if (error.message === '401' || error.message === '404') {
-            this.errorMessage = 'Authentication error. Please check your credentials and try again.';
-          } else {
-            this.errorMessage = 'Unknown error. Please contact your administrator.';
-          }
-        });
+      try {
+        const token = await authenticate(this.form.identifier, this.form.password);
+        login(token);
+        this.$router.go('/');
+      } catch (error) {
+        if (error.status === 401 || error.status === 404) {
+          this.errorMessage = 'Authentication error. Please check your credentials and try again.';
+        } else {
+          this.errorMessage = 'Unknown error. Please contact your administrator.';
+        }
+      }
     }
   }
 }

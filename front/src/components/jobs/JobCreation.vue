@@ -20,21 +20,21 @@
 					</b-form-select>
 				</b-col>
 			</b-row>
-			<div v-if="authSchemSelected === 'user-pwd'" class="job-authentication-conf">
+			<div id="http-auth-conf" v-if="authSchemSelected === 'http'" class="job-authentication-conf">
 				<b-row class="my-3">
 					<b-col sm="12">
-						<h5>https authentication configuration</h5>
+						<h5>http authentication configuration</h5>
 					</b-col>
 				</b-row>
 				<b-row class="my-3">
-					<b-col sm="2"><label for="newJobUrlInput">Https url : </label></b-col>
+					<b-col sm="2"><label for="newJobUrlInput">Http url : </label></b-col>
 					<b-col sm="10">
 						<b-form-input 
               id="newJobUrlInput" 
               type="url" 
               required 
               v-model="httpForm.url"
-              placeholder="https url of your project (should start with 'https://`')"
+              placeholder="http url of your project (should start with 'http://' or 'https://')"
             >
 						</b-form-input>
 					</b-col>
@@ -80,7 +80,7 @@
           </b-col>
         </b-row>
 			</div>
-			<div v-else-if="authSchemSelected === 'ssh'" class="job-authentication-conf">
+			<div id="ssh-auth-conf" v-else-if="authSchemSelected === 'ssh'" class="job-authentication-conf">
 				<b-row class="my-3">
 					<b-col sm="12">
 						<h5>Ssh authentication configuration</h5>
@@ -148,8 +148,23 @@
           </b-col>
         </b-row>
 			</div>
-      <b-alert class="test-msg" :show="errorMsg !== ''" variant="danger">An error has happend during test : {{errorMsg}}</b-alert>
-      <b-alert class="test-msg" :show="isSuccess" variant="success">Repository configuration is correct !</b-alert>
+      <b-alert 
+        id="repo-test-failure-msg" 
+        class="test-msg" 
+        :show="errorMsg !== ''" 
+        variant="danger"
+      >
+        An error has happend during test : {{errorMsg}}
+      </b-alert>
+      <b-alert 
+        id="repo-test-success-msg" 
+        class="test-msg" 
+        v-if="isSuccess"
+        show 
+        variant="success"
+      >
+        Repository configuration is correct !
+      </b-alert>
       <b-row class="my-3" align-h="end">
 				<b-col cols="auto">
 					<button-spin 
@@ -190,7 +205,7 @@ export default {
       authSchemOptions: [
         { value: null, text: 'No authentication' },
         { value: 'ssh', text: 'Ssh private key' },
-        { value: 'user-pwd', text: 'User password tuple' }
+        { value: 'http', text: 'User password tuple' },
       ],
       sshForm: {
         url: '',
