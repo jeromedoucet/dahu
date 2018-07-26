@@ -14,5 +14,4 @@
 todo
 dahu-server
 dahu
-vendor/*/
-tests/gogs_data/**
+vendor
