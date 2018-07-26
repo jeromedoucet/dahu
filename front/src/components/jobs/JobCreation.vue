@@ -7,14 +7,14 @@
 				</b-col>
 			</b-row>
 			<b-row class="my-3">
-				<b-col sm="2"><label for="newJobNameInput">Name : </label></b-col>
+				<b-col sm="2"><label for="newJobNameInput">Name* : </label></b-col>
 				<b-col sm="10">
 					<b-form-input id="newJobNameInput" type="text" required placeholder="Enter name">
 					</b-form-input>
 				</b-col>
 			</b-row>
 			<b-row class="my-3">
-				<b-col sm="2"><label for="authSchemeInput">Authentication : </label></b-col>
+				<b-col sm="2"><label for="authSchemeInput">Authentication* : </label></b-col>
 				<b-col sm="10">
 					<b-form-select id="authSchemeInput" v-model="authSchemSelected" :options="authSchemOptions">
 					</b-form-select>
@@ -27,7 +27,7 @@
 					</b-col>
 				</b-row>
 				<b-row class="my-3">
-					<b-col sm="2"><label for="newJobUrlInput">Http url : </label></b-col>
+					<b-col sm="2"><label for="newJobUrlInput">Http url* : </label></b-col>
 					<b-col sm="10">
 						<b-form-input 
               id="newJobUrlInput" 
@@ -87,7 +87,7 @@
 					</b-col>
 				</b-row>
 				<b-row class="my-3">
-					<b-col sm="2"><label for="newJobUrlInput">Ssh url : </label></b-col>
+					<b-col sm="2"><label for="newJobUrlInput">Ssh url* : </label></b-col>
 					<b-col sm="10">
 						<b-form-input 
               id="newJobUrlInput" 
@@ -100,12 +100,25 @@
 					</b-col>
 				</b-row>
 				<b-row class="my-3">
-					<b-col sm="2"><label for="sshPrivateKeyInput">Ssh key : </label></b-col>
+					<b-col sm="2"><label for="sshPrivateKeyInput">Ssh key* : </label></b-col>
 					<b-col sm="10">
 						<b-form-textarea 
               id="sshPrivateKeyInput" 
               placeholder="Enter your ssh private key" 
+              required 
               v-model="sshForm.key"
+              :rows="3"
+            >
+						</b-form-textarea>
+					</b-col>
+        </b-row>
+				<b-row class="my-3">
+					<b-col sm="2"><label for="sshPrivateKeyPasswordInput">Ssh key password : </label></b-col>
+					<b-col sm="10">
+						<b-form-textarea 
+              id="sshPrivateKeyPasswordInput" 
+              placeholder="Enter your ssh private key password" 
+              v-model="sshForm.keyPassword"
               :rows="3"
             >
 						</b-form-textarea>
