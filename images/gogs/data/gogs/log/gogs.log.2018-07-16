@@ -1,0 +1,12 @@
+2018/07/16 20:25:41 [TRACE] Log Mode: File (Trace)
+2018/07/16 20:25:41 [ INFO] Gogs 0.11.59.0627
+2018/07/16 20:25:41 [ INFO] Cache Service Enabled
+2018/07/16 20:25:41 [ INFO] Session Service Enabled
+2018/07/16 20:25:41 [ INFO] Git Version: 2.11.3
+2018/07/16 20:25:41 [ INFO] SQLite3 Supported
+2018/07/16 20:25:41 [ INFO] Run Mode: Production
+2018/07/16 20:25:41 [TRACE] Doing: CheckRepoStats
+2018/07/16 20:25:41 [ INFO] Listen: http://0.0.0.0:3000
+2018/07/16 20:35:41 [TRACE] Doing: MirrorUpdate
+2018/07/16 20:45:41 [TRACE] Doing: MirrorUpdate
+2018/07/17 16:59:57 [TRACE] Doing: MirrorUpdate

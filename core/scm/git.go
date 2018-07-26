@@ -30,6 +30,7 @@ func (r gitRepository) CheckConnectionWithIdAndPassword(url string, id string, p
 		NoCheckout: true,
 		Auth:       auth,
 	})
+	fmt.Println(err)
 	return fromGitToScmError(err)
 }
 

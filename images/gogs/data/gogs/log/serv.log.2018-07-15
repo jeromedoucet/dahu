@@ -1,0 +1,4 @@
+2018/07/15 09:18:59 [FATAL] [...ogs/gogs/cmd/serv.go:166 runServ()] Repository does not exist: tester/test-toto-repo
+2018/07/15 09:20:45 [FATAL] [...ogs/gogs/cmd/serv.go:166 runServ()] Repository does not exist: tester/test-toto-repo
+2018/07/15 09:29:35 [FATAL] [...ogs/gogs/cmd/serv.go:166 runServ()] Repository does not exist: tester/test-toto-repo
+2018/07/15 09:31:08 [FATAL] [...ogs/gogs/cmd/serv.go:166 runServ()] Repository does not exist: tester/test-toto-repo
