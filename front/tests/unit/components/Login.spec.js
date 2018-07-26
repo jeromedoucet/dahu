@@ -15,7 +15,7 @@ localVue.use(VueRouter);
 
 const router = new VueRouter({
   routes: []
-})
+});
 
 const createLogin = propsData => mount(Login, { propsData, localVue, router });
 

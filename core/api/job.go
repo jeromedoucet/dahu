@@ -54,7 +54,6 @@ func (a *Api) onCreateJob(ctx context.Context, w http.ResponseWriter, r *http.Re
 	body, _ := json.Marshal(newJob) // todo handle err
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "%s", body)
 	w.Write(body)
 }
 
