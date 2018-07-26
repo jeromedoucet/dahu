@@ -32,7 +32,7 @@ func TestCheckWhenNotAuthenticated(t *testing.T) {
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 
@@ -65,7 +65,7 @@ func TestCheckPrivateRepoConfigurationSshWithMissingKey(t *testing.T) {
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 
@@ -100,7 +100,7 @@ func TestCheckPrivateRepoConfigurationSshWithUnknownRepository(t *testing.T) {
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 
@@ -135,7 +135,7 @@ func TestCheckPrivateRepoConfigurationSshWithBadCredentials(t *testing.T) {
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 
@@ -170,7 +170,7 @@ func TestCheckPrivateRepoConfigurationSshWithPasswordUnSuccessfully(t *testing.T
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 
@@ -205,7 +205,7 @@ func TestCheckPrivateRepoConfigurationSshWithPasswordSuccessfully(t *testing.T) 
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 
@@ -240,7 +240,7 @@ func TestCheckPrivateRepoConfigurationSshWithoutPasswordSuccessfully(t *testing.
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 
@@ -275,7 +275,7 @@ func TestCheckPrivateRepoConfigurationHttpBadCredentials(t *testing.T) {
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 
@@ -310,7 +310,7 @@ func TestCheckPrivateRepoConfigurationHttpUnknowUrl(t *testing.T) {
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 
@@ -345,7 +345,7 @@ func TestCheckPrivateRepoConfigurationHttpSuccessfully(t *testing.T) {
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 
@@ -380,7 +380,7 @@ func TestCheckPublicRepoConfigurationHttpSuccessfully(t *testing.T) {
 
 	// server setup
 	a := api.InitRoute(conf)
-	defer a.Close()
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(a.Handler())
 	defer s.Close()
 

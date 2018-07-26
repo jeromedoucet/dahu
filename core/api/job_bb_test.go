@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -19,7 +18,9 @@ import (
 
 func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
 	// given
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
+	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
+	scmConf := model.GitConfig{SshAuth: &sshAuth}
+	job := model.Job{Name: "dahu", GitConf: scmConf}
 	body, _ := json.Marshal(job)
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
@@ -80,7 +81,9 @@ func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
+	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
+	scmConf := model.GitConfig{SshAuth: &sshAuth}
+	job := model.Job{Name: "dahu", GitConf: scmConf}
 	body, _ := json.Marshal(job)
 	tokenStr := tests.GetToken("other_secret", time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -148,7 +151,9 @@ func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
+	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
+	scmConf := model.GitConfig{SshAuth: &sshAuth}
+	job := model.Job{Name: "dahu", GitConf: scmConf}
 	body, _ := json.Marshal(job)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(-1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -204,7 +209,7 @@ func TestListJobsShouldReturn401WhenTokenOutDated(t *testing.T) {
 	}
 }
 
-func TestCreateANewJobShouldReturn400WhenNoName(t *testing.T) {
+func TestCreateANewJobShouldReturn400WhenInvalidJob(t *testing.T) {
 	// given
 
 	// configuration
@@ -216,7 +221,9 @@ func TestCreateANewJobShouldReturn400WhenNoName(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	job := model.Job{Url: "git@github.com:jeromedoucet/dahu.git", ImageName: "dahuci/dahu"}
+	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
+	scmConf := model.GitConfig{SshAuth: &sshAuth}
+	job := model.Job{GitConf: scmConf}
 	body, _ := json.Marshal(job)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -239,41 +246,6 @@ func TestCreateANewJobShouldReturn400WhenNoName(t *testing.T) {
 	}
 }
 
-func TestCreateANewJobShouldReturn400WhenNoUrl(t *testing.T) {
-	// given
-
-	// configuration
-	conf := configuration.InitConf()
-	conf.ApiConf.Port = 4444
-	conf.ApiConf.Secret = "secret"
-
-	// ap start
-	s := httptest.NewServer(api.InitRoute(conf).Handler())
-
-	// request setup
-	job := model.Job{Name: "dahu", ImageName: "dahuci/dahu"}
-	body, _ := json.Marshal(job)
-	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req := buildJobsPostReq(body, tokenStr, s.URL)
-
-	cli := &http.Client{}
-
-	// when
-	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
-
-	// then
-	if err != nil {
-		t.Fatalf("Expect to have to error, but got %s", err.Error())
-	}
-	if resp.StatusCode != 400 {
-		t.Fatalf("Expect 400 return code when trying to create a job without url. "+
-			"Got %d", resp.StatusCode)
-	}
-}
-
 func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 	// given
 
@@ -289,7 +261,9 @@ func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 	close(conf.Close)
 
 	// request setup
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
+	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
+	scmConf := model.GitConfig{SshAuth: &sshAuth}
+	job := model.Job{Name: "dahu", GitConf: scmConf}
 	body, _ := json.Marshal(job)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -325,7 +299,9 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
 
 	// request setup
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
+	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
+	scmConf := model.GitConfig{SshAuth: &sshAuth}
+	job := model.Job{Name: "dahu", GitConf: scmConf}
 	body, _ := json.Marshal(job)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
 	req := buildJobsPostReq(body, tokenStr, s.URL)
@@ -350,9 +326,6 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	dec.Decode(&dj)
 	if dj.Name != job.Name {
 		t.Errorf("expected Name %s from file to equals %s", dj.Name, job.Name)
-	}
-	if dj.Url != job.Url {
-		t.Errorf("expected Name %s from file to equals %s", dj.Url, job.Url)
 	}
 }
 
@@ -408,50 +381,6 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 		if string(job.Name) != string(j.Name) {
 			t.Fatalf("Expect to have a job with Id %s but got %s", job.Name, j.Name)
 		}
-		if job.Url != j.Url {
-			t.Fatalf("Expect to have a job with Url %s but got %s", job.Url, j.Url)
-		}
-	}
-}
-
-func TestRunAJob(t *testing.T) {
-	// given
-
-	// configuration
-	conf := configuration.InitConf()
-	conf.ApiConf.Port = 4444
-	conf.ApiConf.Secret = "secret"
-	job := model.Job{Name: "dahu", Url: "git@github.com:jeromedoucet/dahu.git"}
-	job.EnvParam = make(map[string]string)
-	job.EnvParam["STATUS"] = "success"
-	job.GenerateId()
-	tests.InsertObject(conf, []byte("jobs"), []byte(job.Id), job)
-	a := api.InitRoute(conf)
-
-	// ap start
-	s := httptest.NewServer(a.Handler())
-
-	// request setup
-	reqBody := model.RunRequest{}
-	body, _ := json.Marshal(reqBody)
-	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
-	req := buildJobTrigReq(body, tokenStr, s.URL, string(job.Id))
-	cli := &http.Client{}
-
-	// when
-	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	a.Close()
-	os.Remove(conf.PersistenceConf.Name)
-
-	// then
-	if err != nil {
-		t.Fatalf("Expect to have no error, but got %s", err.Error())
-	}
-	if resp.StatusCode != 200 {
-		t.Fatalf("Expect 200 return code when trying to strigger a Run. "+
-			"Got %d", resp.StatusCode)
 	}
 }
 
@@ -468,20 +397,13 @@ func buildJobsGetReq(token string, addr string) *http.Request {
 	return req
 }
 
-func buildJobTrigReq(body []byte, token, addr, jobId string) *http.Request {
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/jobs/%s/run",
-		addr, jobId), bytes.NewBuffer(body))
-	req.Header.Add("Authorization", "Bearer "+token)
-	return req
-}
-
 func generateJobs(nbJobs int) []model.Job {
 	jobs := make([]model.Job, nbJobs)
+	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
+	scmConf := model.GitConfig{SshAuth: &sshAuth}
 	for i := 0; i < nbJobs; i++ {
-		jobs[i] = model.Job{Name: randomdata.SillyName(), Url: randomdata.IpV4Address()}
+		jobs[i] = model.Job{Name: randomdata.SillyName(), GitConf: scmConf}
 		jobs[i].GenerateId()
 	}
 	return jobs
 }
-
-// todo test time out

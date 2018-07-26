@@ -25,12 +25,6 @@ type Repository interface {
 	// get an existing user identified by the id parameter.
 	GetUser(id string, ctx context.Context) (*model.User, error)
 
-	// will persist a jobRun on an existing Job.
-	CreateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.Context) (*model.JobRun, error)
-
-	// will update a jobRun if it still exist on the Job
-	UpdateJobRun(jobRun *model.JobRun, jobId []byte, ctx context.Context) (*model.JobRun, error)
-
 	// this call will block until the underlying
 	// connection or persistence system is open.
 	WaitClose()

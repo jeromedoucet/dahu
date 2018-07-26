@@ -3,7 +3,6 @@ package persistence_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/jeromedoucet/dahu/configuration"
 	"github.com/jeromedoucet/dahu/core/model"
@@ -42,7 +41,7 @@ func TestInsertDefaultUser(t *testing.T) {
 // a job that already has an id
 func TestCreateJobShouldReturnAnErrorWhenJobHasAnId(t *testing.T) {
 	// given
-	j := model.Job{Name: "test", Url: "github.com/test"}
+	j := model.Job{Name: "test"}
 	j.GenerateId()
 	c := configuration.InitConf()
 
@@ -73,7 +72,7 @@ func TestCreateJobShouldReturnAnErrorWhenNoBucket(t *testing.T) {
 	// todo move it in a 'white box' to make it possible (with no deadlock)
 	t.SkipNow()
 	// given
-	j := model.Job{Name: "test", Url: "github.com/test"}
+	j := model.Job{Name: "test"}
 	c := configuration.InitConf()
 
 	ctx := context.Background()
@@ -229,140 +228,3 @@ func TestGetUserShouldReturnAnErrorWhenNoBucket(t *testing.T) {
 		t.Errorf("expect to get nil but got %s", actualUser.String())
 	}
 }
-
-// test the nominal case of #CreateJobRun
-func TestCreateJobRunShouldUpdateAJob(t *testing.T) {
-	// given
-	j := model.Job{Name: "test"}
-	j.GenerateId()
-	now := time.Now()
-	jr := model.JobRun{ContainerName: "test", Status: model.RUNNING, StartTime: &now}
-	c := configuration.InitConf()
-
-	ctx := context.Background()
-	tests.InsertObject(c, []byte("jobs"), []byte(j.Id), j)
-	rep := persistence.GetRepository(c)
-
-	// when
-	actualJobRun, err := rep.CreateJobRun(&jr, []byte(j.Id), ctx)
-
-	job, _ := rep.GetJob([]byte(j.Id), ctx)
-	// close and remove the db
-	tests.CleanPersistence(c)
-
-	// then
-	if err != nil {
-		t.Errorf("expect to have no error when creating a jobRun on an existing Job, but got %s", err.Error())
-	}
-	if string(actualJobRun.Id) == "" {
-		t.Error("expect the new jobRun to have an id, but is empty.")
-	}
-	if string(job.JobRuns[0].Id) != string(actualJobRun.Id) {
-		t.Errorf("expect the jobRun to be the first on the Job but got %+v", job.JobRuns[0])
-	}
-	if job.JobRuns[0].Version == int64(0) {
-		t.Error("expect the jobRun to have a version != from 0 but got 0")
-	}
-}
-
-// test #CreateJobRun when JobRun is invalid
-func TestCreateJobRunShouldFailIfJobRunInvalid(t *testing.T) {
-	// given
-	j := model.Job{Name: "test"}
-	j.GenerateId()
-	now := time.Now()
-	jr := model.JobRun{Status: model.RUNNING, StartTime: &now}
-	c := configuration.InitConf()
-
-	ctx := context.Background()
-	tests.InsertObject(c, []byte("jobs"), []byte(j.Id), j)
-	rep := persistence.GetRepository(c)
-
-	// when
-	actualJobRun, err := rep.CreateJobRun(&jr, []byte(j.Id), ctx)
-
-	job, _ := rep.GetJob([]byte(j.Id), ctx)
-	// close and remove the db
-	tests.CleanPersistence(c)
-
-	// then
-	if err == nil {
-		t.Fatal("expect to have error when trying to create an invalid jobRun , but got nil")
-	}
-	if actualJobRun != nil {
-		t.Fatalf("expect the new jobRun to be nil, but go %+v", actualJobRun)
-	}
-	if len(job.JobRuns) != 0 {
-		t.Errorf("expect the jobRuns to be empty but got %+v", job.JobRuns[0])
-	}
-}
-
-// test #CreateJobRun when JobRun is invalid
-func TestCreateJobRunShouldFailIfNoJob(t *testing.T) {
-	// given
-	j := model.Job{Name: "test"}
-	j.GenerateId()
-	now := time.Now()
-	jr := model.JobRun{Status: model.RUNNING, StartTime: &now}
-	c := configuration.InitConf()
-
-	ctx := context.Background()
-	rep := persistence.GetRepository(c)
-
-	// when
-	actualJobRun, err := rep.CreateJobRun(&jr, []byte(j.Id), ctx)
-
-	// close and remove the db
-	tests.CleanPersistence(c)
-
-	// then
-	if err == nil {
-		t.Fatal("expect to have error when trying to create a jobRun on a non existing Job, but got nil")
-	}
-	if actualJobRun != nil {
-		t.Fatalf("expect the new jobRun to be nil, but go %+v", actualJobRun)
-	}
-}
-
-func TestUpdateJobRunShouldUpdateAJob(t *testing.T) {
-	// given
-	j := model.Job{Name: "test"}
-	j.GenerateId()
-	now := time.Now()
-	jr := model.JobRun{ContainerName: "test", Status: model.RUNNING, StartTime: &now, Version: now.UnixNano()}
-	jr.GenerateId()
-	j.AppendJobRun(&jr)
-	c := configuration.InitConf()
-
-	ctx := context.Background()
-	tests.InsertObject(c, []byte("jobs"), []byte(j.Id), j)
-
-	// update the JobRun :
-	jr.Status = model.SUCCESS
-	rep := persistence.GetRepository(c)
-
-	// when
-	actualJobRun, err := rep.UpdateJobRun(&jr, []byte(j.Id), ctx)
-
-	job, _ := rep.GetJob([]byte(j.Id), ctx)
-	// close and remove the db
-	tests.CleanPersistence(c)
-
-	// then
-	if err != nil {
-		t.Errorf("expect to have no error when updating a jobRun on an existing Job, but got %s", err.Error())
-	}
-	if actualJobRun.Status != jr.Status {
-		t.Errorf("expect the status of returned JobRun to be %d but got %d", jr.Status, actualJobRun.Status)
-	}
-	if job.JobRuns[0].Status != actualJobRun.Status {
-		t.Errorf("expect the status of JobRun into the job to be %d but got %d", actualJobRun.Status, job.JobRuns[0].Status)
-	}
-	if job.JobRuns[0].Version <= now.UnixNano() {
-		t.Error("expect the version to have been updated, but it is not the case")
-	}
-}
-
-// todo update when JObRun not found
-
-// todo test id already exist

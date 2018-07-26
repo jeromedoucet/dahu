@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/jeromedoucet/dahu/core/model"
-	"github.com/jeromedoucet/route"
 )
 
 // handle request on jobs/
@@ -74,23 +73,4 @@ func (a *Api) onGetJobs(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "%s", body)
 	w.Write(body)
-}
-
-// handle requests on jobs/{jobId}/
-func (a *Api) handleJob(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	// todo handle panic
-	jobId := route.SplitPath(r.URL.Path)[1]
-	var err error
-	var j *model.Job
-	j, err = a.repository.GetJob([]byte(jobId), ctx)
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-	err = a.runEngine.StartOneJob(j, ctx)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
 }
