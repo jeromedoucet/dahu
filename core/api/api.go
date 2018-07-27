@@ -28,7 +28,8 @@ func (a *Api) Handler() http.Handler {
 // todo pass a context for timeout
 func (a *Api) Close() {
 	// wait for the repository
-	// to greceful shutdown
+	// to graceful shutdown
+	close(a.conf.Close)
 	a.repository.WaitClose()
 }
 

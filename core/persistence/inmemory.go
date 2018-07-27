@@ -37,6 +37,7 @@ func getOrCreateInMemory(conf *configuration.Conf) Repository {
 // prepare a db inMemory instance
 func createInMemory(conf *configuration.Conf) {
 	inMemorySingleton = new(inMemory)
+	inMemorySingleton.close = make(chan interface{})
 	inMemorySingleton.conf = conf
 	inMemorySingleton.rwMutex = &sync.RWMutex{}
 	newDb := isNewDb(conf.PersistenceConf.Name)
@@ -88,6 +89,7 @@ func waitForGracefullShutdown() {
 	inMemorySingleton.rwMutex.Lock()
 	defer inMemorySingleton.rwMutex.Unlock()
 	inMemorySingleton.db.Close() // todo handle this error
+	close(inMemorySingleton.close)
 	inMemorySingleton = nil
 }
 
@@ -112,10 +114,11 @@ type inMemory struct {
 	conf    *configuration.Conf
 	db      *bolt.DB
 	rwMutex *sync.RWMutex
+	close   chan interface{}
 }
 
 func (i *inMemory) WaitClose() {
-	<-i.conf.Close
+	<-i.close
 }
 
 func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, error) {
