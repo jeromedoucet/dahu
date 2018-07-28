@@ -7,7 +7,7 @@ import (
 type HttpAuthConfig struct {
 	Url      string `json:"url"`
 	User     string `json:"user"`
-	Password string `json:"password"` // todo hide that ! (dont't show when get job)
+	Password string `json:"password"`
 }
 
 func (a HttpAuthConfig) IsValid() bool {
@@ -17,10 +17,15 @@ func (a HttpAuthConfig) IsValid() bool {
 	return true
 }
 
+func (a *HttpAuthConfig) ToPublicModel() {
+	a.User = ""
+	a.Password = ""
+}
+
 type SshAuthConfig struct {
 	Url         string `json:"url"`
-	Key         string `json:"key"`         // todo hide that ! (dont't show when get job)
-	KeyPassword string `json:"keyPassword"` // todo hide that ! (dont't show when get job)
+	Key         string `json:"key"`
+	KeyPassword string `json:"keyPassword"`
 }
 
 func (a SshAuthConfig) IsValid() bool {
@@ -30,6 +35,11 @@ func (a SshAuthConfig) IsValid() bool {
 		return false
 	}
 	return true
+}
+
+func (a *SshAuthConfig) ToPublicModel() {
+	a.Key = ""
+	a.KeyPassword = ""
 }
 
 type GitConfig struct {
@@ -64,4 +74,13 @@ func (g GitConfig) IsValid() bool {
 		return g.SshAuth.IsValid()
 	}
 	return true
+}
+
+func (g *GitConfig) ToPublicModel() {
+	if g.HttpAuth != nil {
+		g.HttpAuth.ToPublicModel()
+	}
+	if g.SshAuth != nil {
+		g.SshAuth.ToPublicModel()
+	}
 }

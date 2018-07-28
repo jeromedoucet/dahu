@@ -132,4 +132,44 @@ func TestIsValidWithTwoAuth(t *testing.T) {
 	}
 }
 
-// todo test failure both
+func TestToPublicModelSshAuthConfig(t *testing.T) {
+	// given
+	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some key password"}
+
+	// when
+	sshAuth.ToPublicModel()
+
+	// then
+	if sshAuth.Url != "git@some-domain/some-repo.git" {
+		t.Error("expect ToPublicModel to let Url untouched, but it has changed")
+	}
+
+	if sshAuth.Key != "" {
+		t.Error("expect ToPublicModel to clean Key, but it is not empty")
+	}
+
+	if sshAuth.KeyPassword != "" {
+		t.Error("expect ToPublicModel to clean KeyPassword, but it is not empty")
+	}
+}
+
+func TestToPublicModelHttpAuthConfig(t *testing.T) {
+	// given
+	httpAuth := model.HttpAuthConfig{Url: "http://some-domain/some-repo", User: "some user", Password: "some password"}
+
+	// when
+	httpAuth.ToPublicModel()
+
+	// then
+	if httpAuth.Url != "http://some-domain/some-repo" {
+		t.Error("expect ToPublicModel to let Url untouched, but it has changed")
+	}
+
+	if httpAuth.User != "" {
+		t.Error("expect ToPublicModel to clean User, but it is not empty")
+	}
+
+	if httpAuth.Password != "" {
+		t.Error("expect ToPublicModel to clean Password, but it is not empty")
+	}
+}

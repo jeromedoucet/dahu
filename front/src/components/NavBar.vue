@@ -19,7 +19,7 @@ export default {
   methods: {
     disconnect () {
       logout();
-      this.$router.go('/login');
+      this.$router.push('/login');
     },
     isAuthenticated() {
       return isAuthenticated();

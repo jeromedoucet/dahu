@@ -381,6 +381,15 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 		if string(job.Name) != string(j.Name) {
 			t.Fatalf("Expect to have a job with Id %s but got %s", job.Name, j.Name)
 		}
+		if j.GitConf.SshAuth.Url != "git@some-domain/some-repo.git" {
+			t.Fatalf("Expect to return ssh repo url in all jobs got %s for %s", j.GitConf.SshAuth.Url, j.Name)
+		}
+		if j.GitConf.SshAuth.Key != "" {
+			t.Fatalf("Expect to return empty private key in all jobs got %s for %s", j.GitConf.SshAuth.Key, j.Name)
+		}
+		if j.GitConf.SshAuth.KeyPassword != "" {
+			t.Fatalf("Expect to return empty private key password in all jobs got %s for %s", j.GitConf.SshAuth.KeyPassword, j.Name)
+		}
 	}
 }
 

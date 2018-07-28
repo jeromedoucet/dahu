@@ -288,7 +288,7 @@ export default {
       const job = {name: this.name, gitConfig: scmConf}
       try {
         await createJob(job);
-        this.$router.go('/');
+        this.$router.push('/');
       } catch (err) {
         this.errorMsg = `An error has happend during the creation : ${err.message}`;
       } finally {

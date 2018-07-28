@@ -33,6 +33,10 @@ func (j *Job) String() string {
 	return fmt.Sprintf("{Id:%s, Name:%s}", j.Id, j.Name)
 }
 
+func (j *Job) ToPublicModel() {
+	j.GitConf.ToPublicModel()
+}
+
 func generateId(id []byte) ([]byte, error) {
 	if id != nil && string(id) != "" {
 		return nil, errors.New(fmt.Sprintf("the id %+v already defined", string(id)))

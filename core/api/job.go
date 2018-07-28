@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -67,9 +66,16 @@ func (a *Api) onGetJobs(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	body, _ := json.Marshal(jobs) // todo handle err
+	for _, job := range jobs {
+		job.ToPublicModel()
+	}
+	body, err := json.Marshal(jobs) // todo handle err
+	if err != nil {
+		log.Printf("ERROR >> GetJobs encounter error : %s", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "%s", body)
 	w.Write(body)
 }

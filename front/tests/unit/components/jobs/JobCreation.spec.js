@@ -1,5 +1,4 @@
-import { mount } from '@vue/test-utils';
-import { createLocalVue } from '@vue/test-utils';
+import { mount, createLocalVue } from '@vue/test-utils';
 import BootstrapVue from 'bootstrap-vue';
 import VueRouter from 'vue-router';
 import * as scm from '@/requests/scm';
@@ -326,7 +325,7 @@ describe('JobCreation', () => {
     const cmp = createJobCreation();
     cmp.setData({authSchemSelected: scheme, httpForm, name: 'some name'});
     jobsRequest.createJob.mockResolvedValue(201);
-    cmp.vm.$router.go = jest.fn();
+    cmp.vm.$router.push = jest.fn();
 
     // when
     cmp.find('#job-creation-button').trigger('click');
@@ -335,8 +334,8 @@ describe('JobCreation', () => {
     // then
     expect(jobsRequest.createJob.mock.calls.length).toBe(1);
     expect(jobsRequest.createJob.mock.calls[0][0]).toEqual({name: 'some name', gitConfig: {httpAuth: httpForm }});
-    expect(cmp.vm.$router.go.mock.calls.length).toBe(1);
-    expect(cmp.vm.$router.go.mock.calls[0][0]).toBe('/');
+    expect(cmp.vm.$router.push.mock.calls.length).toBe(1);
+    expect(cmp.vm.$router.push.mock.calls[0][0]).toBe('/');
   });
 
   it('should display error message when creation has failed', async () => {
@@ -350,13 +349,14 @@ describe('JobCreation', () => {
     const cmp = createJobCreation();
     cmp.setData({authSchemSelected: scheme, httpForm, name: 'some name'});
     jobsRequest.createJob.mockRejectedValue(new FetchError('some error', 400));
-    cmp.vm.$router.go = jest.fn();
+    cmp.vm.$router.push = jest.fn();
 
     // when
     cmp.find('#job-creation-button').trigger('click');
     await flushPromises();
 
     // then
+    expect(cmp.vm.$router.push.mock.calls.length).toBe(0);
     expect(jobsRequest.createJob.mock.calls.length).toBe(1);
     expect(jobsRequest.createJob.mock.calls[0][0]).toEqual({name: 'some name', gitConfig: {httpAuth: httpForm }});
     expect(cmp.find('#repo-test-failure-msg').exists()).toBeTruthy();

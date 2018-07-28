@@ -220,7 +220,6 @@ func doFetchJobs(c *bolt.Cursor, jobs []*model.Job) ([]*model.Job, error) {
 	res := jobs
 	for k, v := c.First(); k != nil; k, v = c.Next() {
 		var job model.Job
-		fmt.Println(fmt.Sprintf("persistence >> DEBUG. GetJobs: fetched value : %s, with key %s which is valid : %v", v, k, json.Valid(v)))
 		mErr := json.Unmarshal(v, &job)
 		if mErr != nil {
 			return nil, mErr

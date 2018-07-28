@@ -65,7 +65,7 @@ export default {
       try {
         const token = await authenticate(this.form.identifier, this.form.password);
         login(token);
-        this.$router.go('/');
+        this.$router.push('/');
       } catch (error) {
         if (error.status === 401 || error.status === 404) {
           this.errorMessage = 'Authentication error. Please check your credentials and try again.';

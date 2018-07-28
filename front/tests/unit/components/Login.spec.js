@@ -86,7 +86,7 @@ describe('Login.vue', () => {
     // given
     loginCmp = createLogin();
     loginCmp.setData({ form:{ identifier: identifier, password: password }});
-    loginCmp.vm.$router.go = jest.fn();
+    loginCmp.vm.$router.push = jest.fn();
     const evt = { preventDefault: jest.fn() };   
 
     // when
@@ -94,15 +94,15 @@ describe('Login.vue', () => {
 
     // then
     expect(isAuthenticated()).toBe(true);
-    expect(loginCmp.vm.$router.go.mock.calls.length).toBe(1);
-    expect(loginCmp.vm.$router.go.mock.calls[0][0]).toBe('/');
+    expect(loginCmp.vm.$router.push.mock.calls.length).toBe(1);
+    expect(loginCmp.vm.$router.push.mock.calls[0][0]).toBe('/');
   });
 
   it('should print the right error message when unknown user', async () => {
     // given
     loginCmp = createLogin();
     loginCmp.setData({ form:{ identifier: badIdentifier, password: badPassword }});
-    loginCmp.vm.$router.go = jest.fn();
+    loginCmp.vm.$router.push = jest.fn();
     const evt = { preventDefault: jest.fn() };   
 
     // when
@@ -110,7 +110,7 @@ describe('Login.vue', () => {
 
     // then
     expect(isAuthenticated()).toBe(false);
-    expect(loginCmp.vm.$router.go.mock.calls.length).toBe(0);
+    expect(loginCmp.vm.$router.push.mock.calls.length).toBe(0);
     expect(loginCmp.vm.errorMessage).toBe('Authentication error. Please check your credentials and try again.');
   });
 
@@ -118,7 +118,7 @@ describe('Login.vue', () => {
     // given
     loginCmp = createLogin();
     loginCmp.setData({ form:{ identifier: identifier, password: badPassword }});
-    loginCmp.vm.$router.go = jest.fn();
+    loginCmp.vm.$router.push = jest.fn();
     const evt = { preventDefault: jest.fn() };   
 
     // when
@@ -126,7 +126,7 @@ describe('Login.vue', () => {
 
     // then
     expect(isAuthenticated()).toBe(false);
-    expect(loginCmp.vm.$router.go.mock.calls.length).toBe(0);
+    expect(loginCmp.vm.$router.push.mock.calls.length).toBe(0);
     expect(loginCmp.vm.errorMessage).toBe('Authentication error. Please check your credentials and try again.');
   });
 
@@ -134,7 +134,7 @@ describe('Login.vue', () => {
     // given
     loginCmp = createLogin();
     loginCmp.setData({ form:{ identifier: null, password: null }});
-    loginCmp.vm.$router.go = jest.fn();
+    loginCmp.vm.$router.push = jest.fn();
     const evt = { preventDefault: jest.fn() };   
 
     // when
@@ -142,7 +142,7 @@ describe('Login.vue', () => {
 
     // then
     expect(isAuthenticated()).toBe(false);
-    expect(loginCmp.vm.$router.go.mock.calls.length).toBe(0);
+    expect(loginCmp.vm.$router.push.mock.calls.length).toBe(0);
     expect(loginCmp.vm.errorMessage).toBe('Unknown error. Please contact your administrator.');
   });
 

@@ -31,15 +31,15 @@ describe('NavBar.vue', () => {
       // given
       Cookies.set(SESSION_COOKIE, 'token');
       let navBarCmp = createNavBar();
-      navBarCmp.vm.$router.go = jest.fn();
+      navBarCmp.vm.$router.push = jest.fn();
 
       // when
       navBarCmp.vm.disconnect();
 
       // then
       expect(isAuthenticated()).toBe(false);
-      expect(navBarCmp.vm.$router.go.mock.calls.length).toBe(1);
-      expect(navBarCmp.vm.$router.go.mock.calls[0][0]).toBe('/login');
+      expect(navBarCmp.vm.$router.push.mock.calls.length).toBe(1);
+      expect(navBarCmp.vm.$router.push.mock.calls[0][0]).toBe('/login');
     });
 
   })
