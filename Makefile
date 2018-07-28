@@ -15,7 +15,7 @@ build:
 	@echo "Building application"
 	go build $(LD_FLAGS) -o $(APP_NAME)
 
-test: all
+test: build
 	@echo "Running tests..."
 	go test -coverpkg=./... -coverprofile=coverage.out ./...
 
