@@ -1,5 +1,6 @@
 <template>
   <b-card 
+		v-on:click="goToPipeline()"
     :title="job.name"
     bg-variant="secondary"
     class="mb-2 card job-card"
@@ -10,12 +11,17 @@
 </template>
 <script>
 export default {
-  props: {
-    job: {
-      type: Object,
-      required: true
-    }
-  }
+	props: {
+		job: {
+			type: Object,
+			required: true
+		}
+	},
+	methods: {
+		goToPipeline: function() {
+			this.$router.push(`/jobs/${this.job.id}/pipeline`);
+		}
+	}
 }
 </script>
 <style scoped>
