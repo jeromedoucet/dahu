@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -16,13 +15,6 @@ import (
 	"github.com/jeromedoucet/dahu/tests"
 	"github.com/jeromedoucet/dahu/tests/ssh_keys"
 )
-
-func TestMain(m *testing.M) {
-	gogsId := tests.StartGogs()
-	retCode := m.Run()
-	tests.StopGogs(gogsId)
-	os.Exit(retCode)
-}
 
 func TestCheckWhenNotAuthenticated(t *testing.T) {
 	// given

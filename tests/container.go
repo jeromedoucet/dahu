@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"os/exec"
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -53,29 +52,56 @@ func StartGogs() string {
 
 	failFast(err)
 
-	waitForGogs()
+	waitForService("10080")
 
 	return cont.ID
 }
 
-func waitForGogs() {
-	try := 0
-	for {
-		if try > 3 {
-			panic(errors.New("gogs http port unreachable"))
-		}
-		conn, err := net.Dial("tcp", "127.0.0.1:10080")
-		try++
-		if err != nil {
-			<-time.After(1 * time.Second)
-		} else {
-			conn.Close()
-			break
-		}
+func StartDockerRegistry() string {
+	client, err := docker.NewClient(endpoint)
+
+	failFast(err)
+
+	exposedPorts := map[docker.Port]struct{}{
+		"5000/tcp": {},
 	}
+
+	createContConf := docker.Config{
+		ExposedPorts: exposedPorts,
+		Image:        "jerdct/dahu-docker-registry",
+	}
+
+	portBindings := map[docker.Port][]docker.PortBinding{
+		"5000/tcp": {{HostIP: "0.0.0.0", HostPort: "5000"}},
+	}
+
+	createContHostConfig := docker.HostConfig{
+		PortBindings:    portBindings,
+		PublishAllPorts: true,
+		Privileged:      false,
+	}
+
+	containerCreationOption := docker.CreateContainerOptions{
+		Name:       "docker_registry_for_test",
+		Config:     &createContConf,
+		HostConfig: &createContHostConfig,
+	}
+
+	var cont *docker.Container
+	cont, err = client.CreateContainer(containerCreationOption)
+
+	failFast(err)
+
+	err = client.StartContainer(cont.ID, nil)
+
+	failFast(err)
+
+	waitForService("5000")
+
+	return cont.ID
 }
 
-func StopGogs(id string) {
+func StopContainer(id string) {
 	client, err := docker.NewClient(endpoint)
 
 	failFast(err)
@@ -86,12 +112,20 @@ func StopGogs(id string) {
 	failFast(err)
 }
 
-// remove the container with the given name
-func RemoveContainer(name string) {
-	c := exec.Command("docker", []string{"rm", "-f", name}...)
-	err := c.Run()
-	if err != nil {
-		fmt.Println(fmt.Sprintf("got an error %+v when running this command: %s in order to remove a container", err, c.Args))
+func waitForService(tcpPort string) {
+	try := 0
+	for {
+		if try > 3 {
+			panic(errors.New("gogs http port unreachable"))
+		}
+		conn, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%s", tcpPort))
+		try++
+		if err != nil {
+			<-time.After(1 * time.Second)
+		} else {
+			conn.Close()
+			break
+		}
 	}
 }
 
