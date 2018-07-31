@@ -19,6 +19,7 @@ func (a *Api) initRouter() {
 	a.router.HandleFunc("/jobs", a.handleJobs)
 	a.router.HandleFunc("/login", a.handleAuthentication)
 	a.router.HandleFunc("/scm/git/repository", a.handleGitRepositories)
+	a.router.HandleFunc("/containers/docker/registries/test", a.handleDockerRegistryCheck)
 }
 
 func (a *Api) Handler() http.Handler {

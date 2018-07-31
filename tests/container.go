@@ -1,113 +1,113 @@
 package tests
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"time"
 
-	docker "github.com/fsouza/go-dockerclient"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
+	"github.com/jeromedoucet/dahu/configuration"
 )
 
-const endpoint = "unix:///var/run/docker.sock"
-
 func StartGogs() string {
-	client, err := docker.NewClient(endpoint)
+	ctx := context.Background()
+
+	cli, err := client.NewClientWithOpts(client.WithVersion(configuration.DockerApiVersion))
 
 	failFast(err)
 
-	exposedPorts := map[docker.Port]struct{}{
-		"22/tcp":   {},
-		"3000/tcp": {},
+	internalSshPort, _ := nat.NewPort("tcp", "22")
+	internalHttpPort, _ := nat.NewPort("tcp", "3000")
+
+	exposedPorts := nat.PortSet{
+		internalSshPort:  {},
+		internalHttpPort: {},
 	}
 
-	createContConf := docker.Config{
-		ExposedPorts: exposedPorts,
-		Image:        "jerdct/dahu-gogs",
+	containerConf := &container.Config{Image: "jerdct/dahu-gogs", ExposedPorts: exposedPorts}
+
+	externalSshPort := nat.PortBinding{HostIP: "0.0.0.0", HostPort: "10022"}
+	externalHttpPort := nat.PortBinding{HostIP: "0.0.0.0", HostPort: "10080"}
+
+	portBindings := nat.PortMap{
+		internalSshPort:  []nat.PortBinding{externalSshPort},
+		internalHttpPort: []nat.PortBinding{externalHttpPort},
 	}
 
-	portBindings := map[docker.Port][]docker.PortBinding{
-		"22/tcp":   {{HostIP: "0.0.0.0", HostPort: "10022"}},
-		"3000/tcp": {{HostIP: "0.0.0.0", HostPort: "10080"}},
-	}
+	hostConfig := &container.HostConfig{PortBindings: portBindings}
 
-	createContHostConfig := docker.HostConfig{
-		PortBindings:    portBindings,
-		PublishAllPorts: true,
-		Privileged:      false,
-	}
+	networkConfig := &network.NetworkingConfig{}
 
-	containerCreationOption := docker.CreateContainerOptions{
-		Name:       "gogs_for_test",
-		Config:     &createContConf,
-		HostConfig: &createContHostConfig,
-	}
-
-	var cont *docker.Container
-	cont, err = client.CreateContainer(containerCreationOption)
+	var createdContainer container.ContainerCreateCreatedBody
+	createdContainer, err = cli.ContainerCreate(ctx, containerConf, hostConfig, networkConfig, "gogs_for_test")
 
 	failFast(err)
 
-	err = client.StartContainer(cont.ID, nil)
+	err = cli.ContainerStart(ctx, createdContainer.ID, types.ContainerStartOptions{})
 
 	failFast(err)
 
 	waitForService("10080")
 
-	return cont.ID
+	return createdContainer.ID
 }
 
 func StartDockerRegistry() string {
-	client, err := docker.NewClient(endpoint)
+
+	ctx := context.Background()
+
+	cli, err := client.NewClientWithOpts(client.WithVersion(configuration.DockerApiVersion))
 
 	failFast(err)
 
-	exposedPorts := map[docker.Port]struct{}{
-		"5000/tcp": {},
+	internalPort, _ := nat.NewPort("tcp", "5000")
+
+	exposedPorts := nat.PortSet{
+		internalPort: {},
 	}
 
-	createContConf := docker.Config{
-		ExposedPorts: exposedPorts,
-		Image:        "jerdct/dahu-docker-registry",
+	containerConf := &container.Config{Image: "jerdct/dahu-docker-registry", ExposedPorts: exposedPorts}
+
+	externalPort := nat.PortBinding{HostIP: "0.0.0.0", HostPort: "5000"}
+
+	portBindings := nat.PortMap{
+		internalPort: []nat.PortBinding{externalPort},
 	}
 
-	portBindings := map[docker.Port][]docker.PortBinding{
-		"5000/tcp": {{HostIP: "0.0.0.0", HostPort: "5000"}},
-	}
+	hostConfig := &container.HostConfig{PortBindings: portBindings}
 
-	createContHostConfig := docker.HostConfig{
-		PortBindings:    portBindings,
-		PublishAllPorts: true,
-		Privileged:      false,
-	}
+	networkConfig := &network.NetworkingConfig{}
 
-	containerCreationOption := docker.CreateContainerOptions{
-		Name:       "docker_registry_for_test",
-		Config:     &createContConf,
-		HostConfig: &createContHostConfig,
-	}
-
-	var cont *docker.Container
-	cont, err = client.CreateContainer(containerCreationOption)
+	var createdContainer container.ContainerCreateCreatedBody
+	createdContainer, err = cli.ContainerCreate(ctx, containerConf, hostConfig, networkConfig, "docker_registry_for_test")
 
 	failFast(err)
 
-	err = client.StartContainer(cont.ID, nil)
+	err = cli.ContainerStart(ctx, createdContainer.ID, types.ContainerStartOptions{})
 
 	failFast(err)
 
 	waitForService("5000")
 
-	return cont.ID
+	return createdContainer.ID
 }
 
 func StopContainer(id string) {
-	client, err := docker.NewClient(endpoint)
+	ctx := context.Background()
+
+	cli, err := client.NewClientWithOpts(client.WithVersion(configuration.DockerApiVersion))
 
 	failFast(err)
 
-	rmContainerOpt := docker.RemoveContainerOptions{ID: id, RemoveVolumes: true, Force: true}
-	err = client.RemoveContainer(rmContainerOpt)
+	removeOpt := types.ContainerRemoveOptions{Force: true}
+
+	err = cli.ContainerRemove(ctx, id, removeOpt)
 
 	failFast(err)
 }
@@ -131,6 +131,7 @@ func waitForService(tcpPort string) {
 
 func failFast(err error) {
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 }

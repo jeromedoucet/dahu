@@ -12,6 +12,8 @@ const (
 	InMemory PersistenceType = 1 + iota
 )
 
+const DockerApiVersion = "1.37"
+
 // configuration of Dahu
 // data persistence
 type Persistence struct {
