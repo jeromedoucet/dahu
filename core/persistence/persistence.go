@@ -25,6 +25,19 @@ type Repository interface {
 	// get an existing user identified by the id parameter.
 	GetUser(id string, ctx context.Context) (*model.User, error)
 
+	// docker registry creation. If the docker regitry already has an id,
+	// an error is returned.
+	CreateDockerRegistry(job *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, error)
+
+	// get an existing docker registry identified by the id parameter.
+	getDockerRegistry(id []byte, ctx context.Context) (*model.DockerRegistry, error)
+
+	// get all existing docker registries.
+	getDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, error)
+
+	// delete one existing docker registry
+	deleteDockerRegistry(id []byte) error
+
 	// this call will block until the underlying
 	// connection or persistence system is open.
 	WaitClose()
