@@ -34,7 +34,6 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 	} else {
 		return nil, err
 	}
-
 }
 
 func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {

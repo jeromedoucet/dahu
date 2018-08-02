@@ -15,6 +15,88 @@ import (
 	"github.com/jeromedoucet/dahu/tests"
 )
 
+func TestCreateANewDockerRegistryWithoutAuth(t *testing.T) {
+	// given
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+
+	// request setup
+	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	body, _ := json.Marshal(registry)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/containers/docker/registries",
+		s.URL), bytes.NewBuffer(body))
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+	// shutdown server and db gracefully
+	s.Close()
+	tests.CleanPersistence(conf)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != 401 {
+		t.Fatalf("Expect 401 return code when trying to create a docker registry without auth. "+
+			"Got %d", resp.StatusCode)
+	}
+}
+
+func TestCreateANewDockerRegistry(t *testing.T) {
+	// given
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+
+	// request setup
+	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	body, _ := json.Marshal(registry)
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/containers/docker/registries",
+		s.URL), bytes.NewBuffer(body))
+	req.Header.Add("Authorization", "Bearer "+tokenStr)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+	// shutdown server and db gracefully
+	s.Close()
+	tests.CleanPersistence(conf)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != 201 {
+		t.Fatalf("Expect 201 return code when trying to create a docker registry. "+
+			"Got %d", resp.StatusCode)
+	}
+	var newRegistry model.DockerRegistry
+	dec := json.NewDecoder(resp.Body)
+	dec.Decode(&newRegistry)
+	if newRegistry.Name != registry.Name {
+		t.Fatalf("expected Name %s from file to equals %s", newRegistry.Name, registry.Name)
+	}
+	if newRegistry.User != "" {
+		t.Fatalf("expected User to have been removed but got %s", newRegistry.User)
+	}
+	if newRegistry.Password != "" {
+		t.Fatalf("expected Password to have been removed but got %s", newRegistry.Password)
+	}
+}
+
 func TestCheckPrivateRegistryNotAuthenticated(t *testing.T) {
 	// given
 	conf := configuration.InitConf()

@@ -27,3 +27,36 @@ func TestRegistryToPublicModel(t *testing.T) {
 		t.Fatalf("Expect ToPublicModel to hide Password, but got %s", registry.Password)
 	}
 }
+
+func TestJobIdGenerationSuccessFull(t *testing.T) {
+	// given
+	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+
+	// when
+	err := registry.GenerateId()
+
+	// then
+	if err != nil {
+		t.Errorf("Expect #GenerateId to return nil, but got %v", err)
+	}
+	if registry.Id == nil {
+		t.Errorf("expect the Id to have been generated, but is nil")
+	}
+}
+
+func TestJobIdGenerationFailed(t *testing.T) {
+	// given
+	id := []byte("existingId")
+	registry := &model.DockerRegistry{Id: id, Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+
+	// when
+	err := registry.GenerateId()
+
+	// then
+	if err == nil {
+		t.Errorf("Expect #GenerateId to return an error, but got nil")
+	}
+	if string(registry.Id) != string(id) {
+		t.Errorf("expect the Id not to have changed, but got %s", string(registry.Id))
+	}
+}

@@ -20,6 +20,7 @@ func (a *Api) initRouter() {
 	a.router.HandleFunc("/login", a.handleAuthentication)
 	a.router.HandleFunc("/scm/git/repository", a.handleGitRepositories)
 	a.router.HandleFunc("/containers/docker/registries/test", a.handleDockerRegistryCheck)
+	a.router.HandleFunc("/containers/docker/registries", a.handleDockerRegistryCreation)
 }
 
 func (a *Api) Handler() http.Handler {

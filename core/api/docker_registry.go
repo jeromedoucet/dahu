@@ -10,6 +10,7 @@ import (
 	"github.com/jeromedoucet/dahu/core/model"
 )
 
+// Allow to test one docker registry configuration
 func (a *Api) handleDockerRegistryCheck(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	tokErr := a.checkToken(r)
 	if tokErr != nil {
@@ -34,4 +35,31 @@ func (a *Api) handleDockerRegistryCheck(ctx context.Context, w http.ResponseWrit
 		}
 		w.Write(body)
 	}
+}
+
+// create a new docker registry. Will fail if there
+// is already an id in the given registry
+func (a *Api) handleDockerRegistryCreation(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	tokErr := a.checkToken(r)
+	if tokErr != nil {
+		log.Printf("WARN >> handleGitRepositories encounter error : %s ", tokErr.Error())
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	var registry model.DockerRegistry
+	var err error
+	d := json.NewDecoder(r.Body)
+	d.Decode(&registry)
+	var newRegistry *model.DockerRegistry
+	newRegistry, err = a.repository.CreateDockerRegistry(&registry, ctx)
+	if err != nil {
+		log.Printf("ERROR >> dockerRegistryCreation encounter error : %s", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	newRegistry.ToPublicModel()
+	body, _ := json.Marshal(newRegistry)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(body)
 }

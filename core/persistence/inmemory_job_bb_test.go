@@ -36,37 +36,6 @@ func TestCreateJobShouldReturnAnErrorWhenJobHasAnId(t *testing.T) {
 		t.Error(`expect to have an error when calling #CreateJob with
 		a job that already have an id, but got nil`)
 	}
-
-}
-
-// test that the case when the bucket 'jobs' is missing is
-// properly handle => an error is returned
-func TestCreateJobShouldReturnAnErrorWhenNoBucket(t *testing.T) {
-	// todo move it in a 'white box' to make it possible (with no deadlock)
-	t.SkipNow()
-	// given
-	j := model.Job{Name: "test"}
-	c := configuration.InitConf()
-
-	ctx := context.Background()
-	rep := persistence.GetRepository(c)
-	tests.DeleteBucket(c, []byte("jobs"))
-
-	// when
-	nj, err := rep.CreateJob(&j, ctx)
-
-	// close and remove the db
-	tests.CleanPersistence(c)
-
-	// then
-	if nj != nil {
-		t.Errorf(`expect to get no new job for a call on #CreateJob
-		when not bucket but got %+v`, nj)
-	}
-	if err == nil {
-		t.Error(`expect to have an error when calling #CreateJob when
-		no bucket, but got nil`)
-	}
 }
 
 // test the nominal case of #GetJob

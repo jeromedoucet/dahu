@@ -38,6 +38,8 @@ type Repository interface {
 	// delete one existing docker registry
 	deleteDockerRegistry(id []byte) error
 
+	// TODO add update !
+
 	// this call will block until the underlying
 	// connection or persistence system is open.
 	WaitClose()
