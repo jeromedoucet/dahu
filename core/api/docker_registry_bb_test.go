@@ -17,6 +17,7 @@ import (
 
 func TestCreateANewDockerRegistryWithoutAuth(t *testing.T) {
 	// given
+	t.SkipNow()
 
 	// configuration
 	conf := configuration.InitConf()

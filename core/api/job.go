@@ -11,13 +11,6 @@ import (
 
 // handle request on jobs/
 func (a *Api) handleJobs(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	// recover from any panic coming form /jobs requests
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("WARN >> handleJobs encounter error : %+v", r)
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}()
 	err := a.checkToken(r)
 	if err == nil {
 		if r.Method == http.MethodPost {

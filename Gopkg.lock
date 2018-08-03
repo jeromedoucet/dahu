@@ -124,11 +124,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:278e2067e03bf3189babaabf989ad097d78d963553be884dae33bf7c8dd18c89"
+  digest = "1:3759f5723555b1ca4fea4a5fdb3e4e663f840eeea5a356b165839b8b118e986b"
   name = "github.com/jeromedoucet/route"
   packages = ["."]
   pruneopts = "UT"
-  revision = "58f86f06921b526c394dfcada43b63ada3966eb5"
+  revision = "433bbab543a11949531a1a2af0893a65b6519830"
 
 [[projects]]
   digest = "1:19cbd171739c98ab0c6532f340f217ee6aa5c3623e58b7c54d2c3cbff80a3114"
