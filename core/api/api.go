@@ -16,11 +16,11 @@ type Api struct {
 
 func (a *Api) initRouter() {
 	a.router = route.NewDynamicRouter()
-	a.router.HandleFunc("/jobs", a.handleJobs)
+	a.router.HandleFunc("/jobs", a.handleJobs, a.authFilter)
 	a.router.HandleFunc("/login", a.handleAuthentication)
-	a.router.HandleFunc("/scm/git/repository", a.handleGitRepositories)
-	a.router.HandleFunc("/containers/docker/registries/test", a.handleDockerRegistryCheck)
-	a.router.HandleFunc("/containers/docker/registries", a.handleDockerRegistryCreation)
+	a.router.HandleFunc("/scm/git/repository", a.handleGitRepositories, a.authFilter)
+	a.router.HandleFunc("/containers/docker/registries/test", a.handleDockerRegistryCheck, a.authFilter)
+	a.router.HandleFunc("/containers/docker/registries", a.handleDockerRegistryCreation, a.authFilter)
 }
 
 func (a *Api) Handler() http.Handler {

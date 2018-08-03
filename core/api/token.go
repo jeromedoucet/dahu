@@ -3,10 +3,21 @@ package api
 import (
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
 	"net/http"
 	"strings"
+
+	"github.com/dgrijalva/jwt-go"
 )
+
+func (a *Api) authFilter(w http.ResponseWriter, r *http.Request) bool {
+	err := a.checkToken(r)
+	if err == nil {
+		return true
+	} else {
+		w.WriteHeader(http.StatusUnauthorized)
+		return false
+	}
+}
 
 // check if the given request contains a valid JWT token
 // This function will search the token in the authorization

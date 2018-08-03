@@ -12,12 +12,6 @@ import (
 
 // Allow to test one docker registry configuration
 func (a *Api) handleDockerRegistryCheck(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	tokErr := a.checkToken(r)
-	if tokErr != nil {
-		log.Printf("WARN >> handleGitRepositories encounter error : %s ", tokErr.Error())
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
 	var registry model.DockerRegistry
 	d := json.NewDecoder(r.Body)
 	d.Decode(&registry)
@@ -40,12 +34,6 @@ func (a *Api) handleDockerRegistryCheck(ctx context.Context, w http.ResponseWrit
 // create a new docker registry. Will fail if there
 // is already an id in the given registry
 func (a *Api) handleDockerRegistryCreation(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	tokErr := a.checkToken(r)
-	if tokErr != nil {
-		log.Printf("WARN >> handleGitRepositories encounter error : %s ", tokErr.Error())
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
 	var registry model.DockerRegistry
 	var err error
 	d := json.NewDecoder(r.Body)

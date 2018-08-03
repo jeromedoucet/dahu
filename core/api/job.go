@@ -11,18 +11,12 @@ import (
 
 // handle request on jobs/
 func (a *Api) handleJobs(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	err := a.checkToken(r)
-	if err == nil {
-		if r.Method == http.MethodPost {
-			a.onCreateJob(ctx, w, r)
-		} else if r.Method == http.MethodGet {
-			a.onGetJobs(ctx, w, r)
-		} else {
-			// todo return appropriate http code with a corresponding test
-		}
+	if r.Method == http.MethodPost {
+		a.onCreateJob(ctx, w, r)
+	} else if r.Method == http.MethodGet {
+		a.onGetJobs(ctx, w, r)
 	} else {
-		log.Printf("WARN >> handleJobs encounter error : %s ", err.Error())
-		w.WriteHeader(http.StatusUnauthorized)
+		// todo return appropriate http code with a corresponding test
 	}
 }
 
