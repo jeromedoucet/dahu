@@ -74,17 +74,6 @@ func (i *inMemory) GetJobs(ctx context.Context) ([]*model.Job, PersistenceError)
 	}
 }
 
-func getExistingJob(tx *bolt.Tx, jobId []byte) (*model.Job, error) {
-	b := tx.Bucket([]byte("jobs"))
-	if b == nil {
-		return nil, errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
-	}
-	var job model.Job
-	jobData := b.Get(jobId)
-	err := json.Unmarshal(jobData, &job) // todo handle this error
-	return &job, err
-}
-
 func doFetchJobs(c *bolt.Cursor, jobs []*model.Job) ([]*model.Job, error) {
 	res := jobs
 	for k, v := c.First(); k != nil; k, v = c.Next() {
