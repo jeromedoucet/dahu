@@ -8,6 +8,8 @@ import (
 
 	"github.com/jeromedoucet/dahu/core/container"
 	"github.com/jeromedoucet/dahu/core/model"
+	"github.com/jeromedoucet/dahu/core/persistence"
+	"github.com/jeromedoucet/route"
 )
 
 // Allow to test one docker registry configuration
@@ -49,5 +51,34 @@ func (a *Api) handleDockerRegistryCreation(ctx context.Context, w http.ResponseW
 	body, _ := json.Marshal(newRegistry)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	w.Write(body)
+}
+
+func (a *Api) handleDockerRegistryGet(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	path := route.SplitPath(r.URL.Path)
+	registryId := path[len(path)-1]
+	registry, persistenceErr := a.repository.GetDockerRegistry([]byte(registryId), ctx)
+	if persistenceErr != nil {
+		log.Printf("ERROR >> GetDockerRegistry encounter error : %s", persistenceErr.Error())
+		body := fromErrorToJson(persistenceErr)
+		if persistenceErr.ErrorType() == persistence.NotFound {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		w.Write(body)
+		return
+	}
+	registry.ToPublicModel()
+	body, err := json.Marshal(registry)
+	if err != nil {
+		log.Printf("ERROR >> GetDockerRegistry encounter error : %s", err.Error())
+		body := fromErrorToJson(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(body)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }

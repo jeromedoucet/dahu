@@ -44,7 +44,6 @@ func (a *Api) onCreateJob(ctx context.Context, w http.ResponseWriter, r *http.Re
 }
 
 func (a *Api) onGetJobs(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	// todo add tests
 	var err error
 	var jobs []*model.Job
 	jobs, err = a.repository.GetJobs(ctx)
@@ -56,7 +55,7 @@ func (a *Api) onGetJobs(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	for _, job := range jobs {
 		job.ToPublicModel()
 	}
-	body, err := json.Marshal(jobs) // todo handle err
+	body, err := json.Marshal(jobs)
 	if err != nil {
 		log.Printf("ERROR >> GetJobs encounter error : %s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

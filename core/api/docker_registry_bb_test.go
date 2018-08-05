@@ -15,7 +15,131 @@ import (
 	"github.com/jeromedoucet/dahu/tests"
 )
 
-func TestCreateANewDockerRegistryWithoutAuth(t *testing.T) {
+func TestGetDockerRegistry(t *testing.T) {
+	// given
+	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	registry.GenerateId()
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry)
+	defer tests.CleanPersistence(conf)
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+
+	// request setup
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/containers/docker/registries/%s",
+		s.URL, registry.Id), nil)
+	req.Header.Add("Authorization", "Bearer "+tokenStr)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+	// shutdown server and db gracefully
+	s.Close()
+	tests.CleanPersistence(conf)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expect 200 return code when trying to get an unexisting docker registry. "+
+			"Got %d", resp.StatusCode)
+	}
+	var newRegistry model.DockerRegistry
+	dec := json.NewDecoder(resp.Body)
+	dec.Decode(&newRegistry)
+	if newRegistry.Name != registry.Name {
+		t.Fatalf("expected Name %s from file to equals %s", newRegistry.Name, registry.Name)
+	}
+	if newRegistry.User != "" {
+		t.Fatalf("expected User to have been removed but got %s", newRegistry.User)
+	}
+	if newRegistry.Password != "" {
+		t.Fatalf("expected Password to have been removed but got %s", newRegistry.Password)
+	}
+}
+
+func TestGetDockerRegistryNotAuthenticated(t *testing.T) {
+	// given
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+
+	// request setup
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/containers/docker/registries/1",
+		s.URL), nil)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+	// shutdown server and db gracefully
+	s.Close()
+	tests.CleanPersistence(conf)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("Expect 401 return code when trying to get a docker registry without auth. "+
+			"Got %d", resp.StatusCode)
+	}
+}
+
+func TestGetUnknownDockerRegistry(t *testing.T) {
+	// given
+	expectedErrorMsg := "No docker registry with id 1 found"
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+
+	// request setup
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/containers/docker/registries/1",
+		s.URL), nil)
+	req.Header.Add("Authorization", "Bearer "+tokenStr)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+	// shutdown server and db gracefully
+	s.Close()
+	tests.CleanPersistence(conf)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("Expect 404 return code when trying to get an unexisting docker registry. "+
+			"Got %d", resp.StatusCode)
+	}
+	var apiErr api.ApiError
+	d := json.NewDecoder(resp.Body)
+	d.Decode(&apiErr)
+	if apiErr.Msg != expectedErrorMsg {
+		t.Fatalf("Expect %s message when trying to get an unexisting docker registry. "+
+			"Got %s", expectedErrorMsg, apiErr.Msg)
+	}
+}
+
+func TestCreateANewDockerRegistryNotAuthenticated(t *testing.T) {
 	// given
 	t.SkipNow()
 

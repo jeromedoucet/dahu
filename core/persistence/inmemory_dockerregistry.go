@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/jeromedoucet/dahu/core/model"
@@ -37,14 +38,31 @@ func (i *inMemory) CreateDockerRegistry(registry *model.DockerRegistry, ctx cont
 	}
 }
 
-func (i *inMemory) getDockerRegistry(id []byte, ctx context.Context) (*model.DockerRegistry, error) {
+func (i *inMemory) GetDockerRegistry(id []byte, ctx context.Context) (*model.DockerRegistry, PersistenceError) {
+	var registry model.DockerRegistry
+	err := i.doViewAction(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("dockerRegistries"))
+		if b == nil {
+			return errors.New("persistence >> CRITICAL error. No bucket for storing docker registries. The database may be corrupted !")
+		}
+		data := b.Get(id)
+		if data == nil {
+			return newPersistenceError(fmt.Sprintf("No docker registry with id %s found", string(id)), NotFound)
+		}
+		mErr := json.Unmarshal(data, &registry)
+		return mErr
+	})
+	if err == nil {
+		return &registry, nil
+	} else {
+		return nil, wrapError(err)
+	}
+}
+
+func (i *inMemory) GetDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, error) {
 	return nil, nil
 }
 
-func (i *inMemory) getDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, error) {
-	return nil, nil
-}
-
-func (i *inMemory) deleteDockerRegistry(id []byte) error {
+func (i *inMemory) DeleteDockerRegistry(id []byte) error {
 	return nil
 }

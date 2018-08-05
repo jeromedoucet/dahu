@@ -30,13 +30,13 @@ type Repository interface {
 	CreateDockerRegistry(job *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, error)
 
 	// get an existing docker registry identified by the id parameter.
-	getDockerRegistry(id []byte, ctx context.Context) (*model.DockerRegistry, error)
+	GetDockerRegistry(id []byte, ctx context.Context) (*model.DockerRegistry, PersistenceError)
 
 	// get all existing docker registries.
-	getDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, error)
+	GetDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, error)
 
 	// delete one existing docker registry
-	deleteDockerRegistry(id []byte) error
+	DeleteDockerRegistry(id []byte) error
 
 	// TODO add update !
 
