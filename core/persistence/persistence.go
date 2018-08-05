@@ -13,30 +13,30 @@ import (
 type Repository interface {
 
 	// job creation. If the job already has an id,
-	// an error is returned.
-	CreateJob(job *model.Job, ctx context.Context) (*model.Job, error)
+	// an PersistenceError is returned.
+	CreateJob(job *model.Job, ctx context.Context) (*model.Job, PersistenceError)
 
 	// get an existing job identified by the id parameter.
-	GetJob(id []byte, ctx context.Context) (*model.Job, error)
+	GetJob(id []byte, ctx context.Context) (*model.Job, PersistenceError)
 
 	// get all existing jobs
-	GetJobs(ctx context.Context) ([]*model.Job, error)
+	GetJobs(ctx context.Context) ([]*model.Job, PersistenceError)
 
 	// get an existing user identified by the id parameter.
-	GetUser(id string, ctx context.Context) (*model.User, error)
+	GetUser(id string, ctx context.Context) (*model.User, PersistenceError)
 
 	// docker registry creation. If the docker regitry already has an id,
-	// an error is returned.
-	CreateDockerRegistry(job *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, error)
+	// an PersistenceError is returned.
+	CreateDockerRegistry(job *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, PersistenceError)
 
 	// get an existing docker registry identified by the id parameter.
 	GetDockerRegistry(id []byte, ctx context.Context) (*model.DockerRegistry, PersistenceError)
 
 	// get all existing docker registries.
-	GetDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, error)
+	GetDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, PersistenceError)
 
 	// delete one existing docker registry
-	DeleteDockerRegistry(id []byte) error
+	DeleteDockerRegistry(id []byte) PersistenceError
 
 	// TODO add update !
 

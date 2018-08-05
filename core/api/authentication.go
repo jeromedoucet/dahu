@@ -22,8 +22,8 @@ func (a *Api) handleAuthentication(ctx context.Context, w http.ResponseWriter, r
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	err = u.ComparePassword([]byte(l.Password))
-	if err != nil {
+	errPersistence := u.ComparePassword([]byte(l.Password))
+	if errPersistence != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

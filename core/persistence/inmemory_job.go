@@ -9,7 +9,7 @@ import (
 	"github.com/jeromedoucet/dahu/core/model"
 )
 
-func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, error) {
+func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, PersistenceError) {
 	err := i.doUpdateAction(func(tx *bolt.Tx) error {
 		// todo check that job is non-nil
 		var updateErr error
@@ -32,11 +32,11 @@ func (i *inMemory) CreateJob(job *model.Job, ctx context.Context) (*model.Job, e
 	if err == nil {
 		return job, nil
 	} else {
-		return nil, err
+		return nil, wrapError(err)
 	}
 }
 
-func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {
+func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, PersistenceError) {
 	var job model.Job
 	err := i.doViewAction(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("jobs"))
@@ -50,11 +50,11 @@ func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, error) {
 	if err == nil {
 		return &job, nil
 	} else {
-		return nil, err
+		return nil, wrapError(err)
 	}
 }
 
-func (i *inMemory) GetJobs(ctx context.Context) ([]*model.Job, error) {
+func (i *inMemory) GetJobs(ctx context.Context) ([]*model.Job, PersistenceError) {
 	// todo add missing tests
 	jobs := make([]*model.Job, 0)
 	err := i.doViewAction(func(tx *bolt.Tx) error {
@@ -70,7 +70,7 @@ func (i *inMemory) GetJobs(ctx context.Context) ([]*model.Job, error) {
 	if err == nil {
 		return jobs, nil
 	} else {
-		return nil, err
+		return nil, wrapError(err)
 	}
 }
 

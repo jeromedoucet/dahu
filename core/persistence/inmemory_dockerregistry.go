@@ -10,7 +10,7 @@ import (
 	"github.com/jeromedoucet/dahu/core/model"
 )
 
-func (i *inMemory) CreateDockerRegistry(registry *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, error) {
+func (i *inMemory) CreateDockerRegistry(registry *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, PersistenceError) {
 	// todo see if factorization can be done
 	err := i.doUpdateAction(func(tx *bolt.Tx) error {
 		// todo check that docker registry is non-nil
@@ -34,7 +34,7 @@ func (i *inMemory) CreateDockerRegistry(registry *model.DockerRegistry, ctx cont
 	if err == nil {
 		return registry, nil
 	} else {
-		return nil, err
+		return nil, wrapError(err)
 	}
 }
 
@@ -59,10 +59,10 @@ func (i *inMemory) GetDockerRegistry(id []byte, ctx context.Context) (*model.Doc
 	}
 }
 
-func (i *inMemory) GetDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, error) {
+func (i *inMemory) GetDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, PersistenceError) {
 	return nil, nil
 }
 
-func (i *inMemory) DeleteDockerRegistry(id []byte) error {
+func (i *inMemory) DeleteDockerRegistry(id []byte) PersistenceError {
 	return nil
 }

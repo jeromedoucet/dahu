@@ -9,7 +9,7 @@ import (
 	"github.com/jeromedoucet/dahu/core/model"
 )
 
-func (i *inMemory) GetUser(id string, ctx context.Context) (*model.User, error) {
+func (i *inMemory) GetUser(id string, ctx context.Context) (*model.User, PersistenceError) {
 	var user model.User
 	err := i.doViewAction(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("users"))
@@ -23,6 +23,6 @@ func (i *inMemory) GetUser(id string, ctx context.Context) (*model.User, error) 
 	if err == nil {
 		return &user, nil
 	} else {
-		return nil, err
+		return nil, wrapError(err)
 	}
 }
