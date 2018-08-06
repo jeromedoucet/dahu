@@ -33,23 +33,27 @@ func (a *Api) handleDockerRegistryCheck(ctx context.Context, w http.ResponseWrit
 	}
 }
 
+// switch choice for request on a single docker registry resource
 func (a *Api) handleDockerRegistry(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		a.onDockerRegistryGet(ctx, w, r)
 	} else if r.Method == http.MethodDelete {
 		a.onDockerRegistryDelete(ctx, w, r)
+	} else if r.Method == http.MethodPut {
+		a.onDockerRegistryUpdate(ctx, w, r)
 	} else {
-		// todo return appropriate http code with a corresponding test
+		// TODO return appropriate http code with a corresponding test
 	}
 }
 
+// switch choice for request on all docker registries resources
 func (a *Api) handleDockerRegistries(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		a.onDockerRegistriesGet(ctx, w, r)
 	} else if r.Method == http.MethodPost {
 		a.onDockerRegistryCreation(ctx, w, r)
 	} else {
-		// todo return appropriate http code with a corresponding test
+		// TODO return appropriate http code with a corresponding test
 	}
 }
 
@@ -100,6 +104,51 @@ func (a *Api) onDockerRegistryDelete(ctx context.Context, w http.ResponseWriter,
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+// http handler that deals with put request on a docker registry resource
+// it update all fields in the resource. Partial update is not supported.
+func (a *Api) onDockerRegistryUpdate(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var registry model.DockerRegistry
+	d := json.NewDecoder(r.Body)
+	d.Decode(&registry)
+	path := route.SplitPath(r.URL.Path)
+	registryId := path[len(path)-1]
+	updatedRegistry, persistenceErr := a.repository.UpdateDockerRegistry([]byte(registryId), &registry, ctx)
+	if updatedRegistry != nil {
+		updatedRegistry.ToPublicModel()
+	}
+	if persistenceErr != nil {
+		log.Printf("ERROR >> onDockerRegistryUpdate encounter error : %s", persistenceErr.Error())
+		var body []byte
+		if persistenceErr.ErrorType() == persistence.NotFound {
+			body = fromErrorToJson(persistenceErr)
+			w.WriteHeader(http.StatusNotFound)
+		} else if persistenceErr.ErrorType() == persistence.Conflict {
+			// in case of conflict, the "updatedRegistry" return by the persistence
+			// layer is the existing db version. We must return it to allow the
+			// front app to notify the use. We must return it to allow the
+			// front app to notify the user.
+			body, _ = json.Marshal(updatedRegistry)
+			w.WriteHeader(http.StatusConflict)
+		} else {
+			body = fromErrorToJson(persistenceErr)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		w.Write(body)
+		return
+	}
+	body, err := json.Marshal(updatedRegistry)
+	if err != nil {
+		log.Printf("ERROR >> onDockerRegistryUpdate encounter error : %s", err.Error())
+		body := fromErrorToJson(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(body)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
 }
 
 // create a new docker registry. Will fail if there

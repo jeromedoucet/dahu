@@ -15,9 +15,216 @@ import (
 	"github.com/jeromedoucet/dahu/tests"
 )
 
+// test updating a docker registry
+// without auth token
+func TestUpdateDockerRegistryNotAuthenticated(t *testing.T) {
+	// given
+	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	registry.GenerateId()
+	registry.LastModificationTime = time.Now().UnixNano()
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
+
+	// update changes
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
+
+	// request setup
+	body, _ := json.Marshal(registry)
+	req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/containers/docker/registries/%s",
+		s.URL, registry.Id), bytes.NewBuffer(body))
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("Expect 401 return code when trying to update a docker registry without authentication. "+
+			"Got %d", resp.StatusCode)
+	}
+}
+
+// test updating a docker registry that
+// does not exist
+func TestUpdateUnknownDockerRegistry(t *testing.T) {
+	// given
+	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	registry.GenerateId()
+	registry.LastModificationTime = time.Now().UnixNano()
+
+	expectedErrorMsg := fmt.Sprintf("No docker registry with id %s found", registry.Id)
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
+
+	// update changes
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
+
+	// request setup
+	body, _ := json.Marshal(registry)
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/containers/docker/registries/%s",
+		s.URL, registry.Id), bytes.NewBuffer(body))
+	req.Header.Add("Authorization", "Bearer "+tokenStr)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("Expect 404 return code when trying to update an inexisting docker registry. "+
+			"Got %d", resp.StatusCode)
+	}
+	var apiErr api.ApiError
+	d := json.NewDecoder(resp.Body)
+	d.Decode(&apiErr)
+	if apiErr.Msg != expectedErrorMsg {
+		t.Fatalf("Expect %s message when trying to update an unexisting docker registry. "+
+			"Got %s", expectedErrorMsg, apiErr.Msg)
+	}
+}
+
+// this case test a conflict when updating one docker registry.
+// an optimistic lock mechanism based on the LastModificationTime
+// field is used to detect read conflict. When such case happened,
+// the data from db are return with a conflict status.
+func TestUpdateDockerRegistryConflict(t *testing.T) {
+	// given
+	referenceModificationTime := time.Now().UnixNano()
+	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	registry.GenerateId()
+	registry.LastModificationTime = referenceModificationTime
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry)
+	defer tests.CleanPersistence(conf)
+
+	// update changes
+	registry.Name = "one-test"
+	registry.LastModificationTime = time.Now().UnixNano() // force the conflict here
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
+
+	// request setup
+	body, _ := json.Marshal(registry)
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/containers/docker/registries/%s",
+		s.URL, registry.Id), bytes.NewBuffer(body))
+	req.Header.Add("Authorization", "Bearer "+tokenStr)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusConflict {
+		t.Fatalf("Expect 409 return code when trying to update a docker registry with conflict. "+
+			"Got %d", resp.StatusCode)
+	}
+	var updatedRegistry model.DockerRegistry
+	dec := json.NewDecoder(resp.Body)
+	dec.Decode(&updatedRegistry)
+	if updatedRegistry.Name != "test" {
+		t.Fatalf("expected Name %s from file to equals %s", updatedRegistry.Name, "test")
+	}
+	if updatedRegistry.User != "" {
+		t.Fatalf("expected User to have been removed but got %s", updatedRegistry.User)
+	}
+	if updatedRegistry.Password != "" {
+		t.Fatalf("expected Password to have been removed but got %s", updatedRegistry.Password)
+	}
+	if updatedRegistry.LastModificationTime != referenceModificationTime {
+		t.Fatal("expected LastModificationTime to remain unchanged but it has change")
+	}
+}
+
+func TestUpdateDockerRegistry(t *testing.T) {
+	// given
+	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	registry.GenerateId()
+	registry.LastModificationTime = time.Now().UnixNano()
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry)
+	defer tests.CleanPersistence(conf)
+
+	// update changes
+	registry.Name = "one-test"
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
+
+	// request setup
+	body, _ := json.Marshal(registry)
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/containers/docker/registries/%s",
+		s.URL, registry.Id), bytes.NewBuffer(body))
+	req.Header.Add("Authorization", "Bearer "+tokenStr)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expect 200 return code when trying to update a docker registry. "+
+			"Got %d", resp.StatusCode)
+	}
+	var updatedRegistry model.DockerRegistry
+	dec := json.NewDecoder(resp.Body)
+	dec.Decode(&updatedRegistry)
+	if updatedRegistry.Name != registry.Name {
+		t.Fatalf("expected Name %s from file to equals %s", updatedRegistry.Name, registry.Name)
+	}
+	if updatedRegistry.User != "" {
+		t.Fatalf("expected User to have been removed but got %s", updatedRegistry.User)
+	}
+	if updatedRegistry.Password != "" {
+		t.Fatalf("expected Password to have been removed but got %s", updatedRegistry.Password)
+	}
+	if updatedRegistry.LastModificationTime <= registry.LastModificationTime {
+		t.Fatal("expected LastModificationTime to have been update but it is not the case")
+	}
+}
+
 // test case for docker registry list
 // api endpoint when not authenticated
-func TestListDockerNotAuthenticated(t *testing.T) {
+func TestListDockerRegistryNotAuthenticated(t *testing.T) {
 	// given
 
 	// configuration
@@ -152,6 +359,7 @@ func TestDeleteDockerRegistryNotAuthenticated(t *testing.T) {
 // api endpoint when resource doesn't exist
 func TestDeleteUnknownDockerRegistry(t *testing.T) {
 	// given
+	expectedErrorMsg := "No docker registry with id 1 found"
 
 	// configuration
 	conf := configuration.InitConf()
@@ -161,6 +369,7 @@ func TestDeleteUnknownDockerRegistry(t *testing.T) {
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// request setup
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -172,7 +381,6 @@ func TestDeleteUnknownDockerRegistry(t *testing.T) {
 	// when
 	resp, err := cli.Do(req)
 	// shutdown server and db gracefully
-	s.Close()
 
 	// then
 	if err != nil {
@@ -181,6 +389,13 @@ func TestDeleteUnknownDockerRegistry(t *testing.T) {
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("Expect 404 return code when trying to delete an unexisting docker registry. "+
 			"Got %d", resp.StatusCode)
+	}
+	var apiErr api.ApiError
+	d := json.NewDecoder(resp.Body)
+	d.Decode(&apiErr)
+	if apiErr.Msg != expectedErrorMsg {
+		t.Fatalf("Expect %s message when trying to delete an unexisting docker registry. "+
+			"Got %s", expectedErrorMsg, apiErr.Msg)
 	}
 }
 
@@ -256,14 +471,13 @@ func TestGetDockerRegistry(t *testing.T) {
 	resp, err := cli.Do(req)
 	// shutdown server and db gracefully
 	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
 		t.Fatalf("Expect to have to error, but got %s", err.Error())
 	}
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expect 200 return code when trying to get an unexisting docker registry. "+
+		t.Fatalf("Expect 200 return code when trying to get a docker registry. "+
 			"Got %d", resp.StatusCode)
 	}
 	var newRegistry model.DockerRegistry
@@ -287,6 +501,7 @@ func TestGetDockerRegistryNotAuthenticated(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
@@ -300,7 +515,6 @@ func TestGetDockerRegistryNotAuthenticated(t *testing.T) {
 	resp, err := cli.Do(req)
 	// shutdown server and db gracefully
 	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -320,6 +534,7 @@ func TestGetUnknownDockerRegistry(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
@@ -335,7 +550,6 @@ func TestGetUnknownDockerRegistry(t *testing.T) {
 	resp, err := cli.Do(req)
 	// shutdown server and db gracefully
 	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -362,6 +576,7 @@ func TestCreateANewDockerRegistryNotAuthenticated(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
@@ -377,7 +592,6 @@ func TestCreateANewDockerRegistryNotAuthenticated(t *testing.T) {
 	resp, err := cli.Do(req)
 	// shutdown server and db gracefully
 	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -396,9 +610,11 @@ func TestCreateANewDockerRegistry(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// request setup
 	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
@@ -411,9 +627,6 @@ func TestCreateANewDockerRegistry(t *testing.T) {
 
 	// when
 	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {

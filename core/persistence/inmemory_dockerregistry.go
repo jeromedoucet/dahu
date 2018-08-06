@@ -82,6 +82,39 @@ func (i *inMemory) DeleteDockerRegistry(id []byte) PersistenceError {
 	return wrapError(err)
 }
 
+func (i *inMemory) UpdateDockerRegistry(id []byte, registry *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, PersistenceError) {
+	var updatedRegistry model.DockerRegistry
+	err := i.doUpdateAction(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("dockerRegistries"))
+		if b == nil {
+			return errors.New("persistence >> CRITICAL error. No bucket for storing docker registries. The database may be corrupted !")
+		}
+		var existingRegistry model.DockerRegistry
+		data := b.Get(id)
+		if data == nil {
+			return newPersistenceError(fmt.Sprintf("No docker registry with id %s found", string(id)), NotFound)
+		}
+		mErr := json.Unmarshal(data, &existingRegistry)
+		if mErr != nil {
+			return mErr
+		}
+		// optimisitic lock check
+		if existingRegistry.LastModificationTime != registry.LastModificationTime {
+			updatedRegistry = existingRegistry
+			return newPersistenceError(fmt.Sprintf("Conflict when trying to update registry with id %s", string(id)), Conflict)
+		}
+		registry.LastModificationTime = time.Now().UnixNano()
+		data, updateErr := json.Marshal(registry)
+		if updateErr != nil {
+			return updateErr
+		}
+		updateErr = b.Put(registry.Id, data)
+		updatedRegistry = *registry
+		return updateErr
+	})
+	return &updatedRegistry, wrapError(err)
+}
+
 func (i *inMemory) GetDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, PersistenceError) {
 	registries := make([]*model.DockerRegistry, 0)
 	err := i.doViewAction(func(tx *bolt.Tx) error {

@@ -4,6 +4,7 @@ type PersistenceErrorType int
 
 const (
 	NotFound PersistenceErrorType = 1 + iota
+	Conflict
 	OtherError
 )
 

@@ -27,7 +27,7 @@ type Repository interface {
 
 	// docker registry creation. If the docker regitry already has an id,
 	// an PersistenceError is returned.
-	CreateDockerRegistry(job *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, PersistenceError)
+	CreateDockerRegistry(registry *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, PersistenceError)
 
 	// get an existing docker registry identified by the id parameter.
 	GetDockerRegistry(id []byte, ctx context.Context) (*model.DockerRegistry, PersistenceError)
@@ -38,7 +38,8 @@ type Repository interface {
 	// delete one existing docker registry
 	DeleteDockerRegistry(id []byte) PersistenceError
 
-	// TODO add update !
+	// update one existing docker registry
+	UpdateDockerRegistry(id []byte, registry *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, PersistenceError)
 
 	// this call will block until the underlying
 	// connection or persistence system is open.
