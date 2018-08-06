@@ -54,12 +54,23 @@ func (a *Api) handleDockerRegistryCreation(ctx context.Context, w http.ResponseW
 	w.Write(body)
 }
 
-func (a *Api) handleDockerRegistryGet(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (a *Api) handleDockerRegistry(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		a.onDockerRegistryGet(ctx, w, r)
+	} else if r.Method == http.MethodDelete {
+		a.onDockerRegistryDelete(ctx, w, r)
+	} else {
+		// todo return appropriate http code with a corresponding test
+	}
+}
+
+// http handler that deals with get request on a single docker registry resource
+func (a *Api) onDockerRegistryGet(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	path := route.SplitPath(r.URL.Path)
 	registryId := path[len(path)-1]
 	registry, persistenceErr := a.repository.GetDockerRegistry([]byte(registryId), ctx)
 	if persistenceErr != nil {
-		log.Printf("ERROR >> GetDockerRegistry encounter error : %s", persistenceErr.Error())
+		log.Printf("ERROR >> onDockerRegistryGet encounter error : %s", persistenceErr.Error())
 		body := fromErrorToJson(persistenceErr)
 		if persistenceErr.ErrorType() == persistence.NotFound {
 			w.WriteHeader(http.StatusNotFound)
@@ -72,7 +83,7 @@ func (a *Api) handleDockerRegistryGet(ctx context.Context, w http.ResponseWriter
 	registry.ToPublicModel()
 	body, err := json.Marshal(registry)
 	if err != nil {
-		log.Printf("ERROR >> GetDockerRegistry encounter error : %s", err.Error())
+		log.Printf("ERROR >> onDockerRegistryGet encounter error : %s", err.Error())
 		body := fromErrorToJson(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(body)
@@ -81,4 +92,23 @@ func (a *Api) handleDockerRegistryGet(ctx context.Context, w http.ResponseWriter
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
+}
+
+// http handler that deals with delete request on a docker registry resource
+func (a *Api) onDockerRegistryDelete(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	path := route.SplitPath(r.URL.Path)
+	registryId := path[len(path)-1]
+	persistenceErr := a.repository.DeleteDockerRegistry([]byte(registryId))
+	if persistenceErr != nil {
+		log.Printf("ERROR >> onDockerRegistryDelete encounter error : %s", persistenceErr.Error())
+		body := fromErrorToJson(persistenceErr)
+		if persistenceErr.ErrorType() == persistence.NotFound {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		w.Write(body)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

@@ -16,9 +16,22 @@ type MockRepository struct {
 	UpdateJobRunCount int
 }
 
-// will clean the data inside persistence
-// must be done after a test has run.
+// will Close persistence layer (if needed)
+// and then remove all data within.
+// should be used at the end of a test
 func CleanPersistence(conf *configuration.Conf) {
+	ClosePersistence(conf)
+	DeletePersistence(conf)
+}
+
+// Will Close persistence layer without deleting
+// data. Is usefull when it is required to make
+// some check at the end of a test with a persistence
+// system that don't allow concurrent access (bbolt)
+//
+// If this function is used, a call to #DeletePersistence
+// may be required to clean everything before the next test
+func ClosePersistence(conf *configuration.Conf) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered in CleanPersistence", r)
@@ -27,6 +40,9 @@ func CleanPersistence(conf *configuration.Conf) {
 	close(conf.Close)
 	rep := persistence.GetRepository(conf)
 	rep.WaitClose()
+}
+
+func DeletePersistence(conf *configuration.Conf) {
 	os.Remove(conf.PersistenceConf.Name)
 }
 
@@ -42,6 +58,20 @@ func InsertObject(conf *configuration.Conf, bucketName, key []byte, object inter
 		return nil
 	})
 	db.Close()
+}
+
+func ObjectExist(conf *configuration.Conf, bucketName, key []byte) bool {
+	res := false
+	db, _ := bolt.Open(conf.PersistenceConf.Name, 0600, nil)
+	db.View(func(tx *bolt.Tx) error {
+		data := tx.Bucket(bucketName).Get(key)
+		if data != nil {
+			res = true
+		}
+		return nil
+	})
+	db.Close()
+	return res
 }
 
 func DeleteBucket(conf *configuration.Conf, bucketName []byte) {

@@ -21,7 +21,7 @@ func (a *Api) initRouter() {
 	a.router.HandleFunc("/scm/git/repository", a.handleGitRepositories, a.authFilter)
 	a.router.HandleFunc("/containers/docker/registries/test", a.handleDockerRegistryCheck, a.authFilter)
 	a.router.HandleFunc("/containers/docker/registries", a.handleDockerRegistryCreation, a.authFilter)
-	a.router.HandleFunc("/containers/docker/registries/:registryId", a.handleDockerRegistryGet, a.authFilter)
+	a.router.HandleFunc("/containers/docker/registries/:registryId", a.handleDockerRegistry, a.authFilter)
 }
 
 func (a *Api) Handler() http.Handler {

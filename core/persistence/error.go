@@ -30,6 +30,9 @@ func newPersistenceError(msg string, errType PersistenceErrorType) PersistenceEr
 }
 
 func wrapError(err error) PersistenceError {
+	if err == nil {
+		return nil
+	}
 	persistenceErr, isPersistenceErr := err.(PersistenceError)
 	if isPersistenceErr {
 		return persistenceErr

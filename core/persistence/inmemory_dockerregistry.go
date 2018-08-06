@@ -64,5 +64,18 @@ func (i *inMemory) GetDockerRegistries(ctx context.Context) ([]*model.DockerRegi
 }
 
 func (i *inMemory) DeleteDockerRegistry(id []byte) PersistenceError {
-	return nil
+	err := i.doUpdateAction(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("dockerRegistries"))
+		if b == nil {
+			return errors.New("persistence >> CRITICAL error. No bucket for storing docker registries. The database may be corrupted !")
+		}
+		// a get request is needed here because #Delete doesn't return an error
+		// when key not found. This behavior is not consistent regarding the Api contract
+		data := b.Get(id)
+		if data == nil {
+			return newPersistenceError(fmt.Sprintf("No docker registry with id %s found", string(id)), NotFound)
+		}
+		return b.Delete(id)
+	})
+	return wrapError(err)
 }
