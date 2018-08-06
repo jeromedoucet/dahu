@@ -24,15 +24,13 @@ func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
 	body, _ := json.Marshal(job)
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// when
 	resp, err := http.Post(fmt.Sprintf("%s/jobs", s.URL),
 		"application/json", bytes.NewBuffer(body))
-
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -49,14 +47,12 @@ func TestListJobsShouldReturn401WithoutAToken(t *testing.T) {
 	// given
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
+	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// when
 	resp, err := http.Get(fmt.Sprintf("%s/jobs", s.URL))
-
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -76,9 +72,11 @@ func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// request setup
 	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
@@ -92,9 +90,6 @@ func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
 
 	// when
 	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -113,9 +108,11 @@ func TestListJobsShouldReturn401WhenBadCredentials(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// request setup
 	tokenStr := tests.GetToken("other_secret", time.Now().Add(1*time.Minute))
@@ -125,9 +122,6 @@ func TestListJobsShouldReturn401WhenBadCredentials(t *testing.T) {
 
 	// when
 	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -146,9 +140,11 @@ func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// request setup
 	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
@@ -162,9 +158,6 @@ func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 
 	// when
 	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -183,9 +176,11 @@ func TestListJobsShouldReturn401WhenTokenOutDated(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// request setup
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(-1*time.Minute))
@@ -195,9 +190,6 @@ func TestListJobsShouldReturn401WhenTokenOutDated(t *testing.T) {
 
 	// when
 	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -216,9 +208,11 @@ func TestCreateANewJobShouldReturn400WhenInvalidJob(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// request setup
 	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
@@ -232,9 +226,6 @@ func TestCreateANewJobShouldReturn400WhenInvalidJob(t *testing.T) {
 
 	// when
 	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -253,12 +244,14 @@ func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.DeletePersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// close the db for having an error
-	close(conf.Close)
+	tests.ClosePersistence(conf)
 
 	// request setup
 	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
@@ -272,10 +265,6 @@ func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 
 	// when
 	resp, err := cli.Do(req)
-
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -294,9 +283,11 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// request setup
 	sshAuth := model.SshAuthConfig{Url: "git@some-domain/some-repo.git", Key: "some-key", KeyPassword: "some-password"}
@@ -309,9 +300,6 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 
 	// when
 	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {
@@ -336,6 +324,7 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 	jobs := generateJobs(4)
 	for _, job := range jobs {
 		tests.InsertObject(conf, []byte("jobs"), []byte(job.Id), job)
@@ -343,6 +332,7 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 
 	// request setup
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -351,9 +341,6 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 
 	// when
 	resp, err := cli.Do(req)
-	// shutdown server and db gracefully
-	s.Close()
-	tests.CleanPersistence(conf)
 
 	// then
 	if err != nil {

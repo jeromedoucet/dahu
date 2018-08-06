@@ -23,6 +23,7 @@ func TestAuthenticationShouldReturn200AndAToken(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// insert existing user in the db
 	password := "test_test_test_test"
@@ -32,6 +33,7 @@ func TestAuthenticationShouldReturn200AndAToken(t *testing.T) {
 
 	// start the server and setup the request
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 	l := model.Login{Id: u.Login, Password: password}
 	body, _ := json.Marshal(l)
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login",
@@ -41,9 +43,6 @@ func TestAuthenticationShouldReturn200AndAToken(t *testing.T) {
 	// when
 	resp, err := cli.Do(req)
 
-	// close, remove the db and shutdown the server
-	s.Close()
-	tests.CleanPersistence(conf)
 	// then
 
 	// check the response code and error
@@ -82,6 +81,7 @@ func TestAuthenticationShouldReturn404AndNoTokenWhenNoUserFound(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// insert existing user in the db
 	password := "test_test_test_test"
@@ -89,6 +89,7 @@ func TestAuthenticationShouldReturn404AndNoTokenWhenNoUserFound(t *testing.T) {
 
 	// start the server and setup the request
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 	l := model.Login{Id: u.Login, Password: password}
 	body, _ := json.Marshal(l)
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login",
@@ -98,9 +99,6 @@ func TestAuthenticationShouldReturn404AndNoTokenWhenNoUserFound(t *testing.T) {
 	// when
 	resp, err := cli.Do(req)
 
-	// close, remove the db and shutdown the server
-	s.Close()
-	tests.CleanPersistence(conf)
 	// then
 
 	// check the response code and error
@@ -125,6 +123,7 @@ func TestAuthenticationShouldReturn401AndNoTokenWhenBadPassword(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
 
 	// insert existing user in the db
 	password := "test_test_test_test"
@@ -134,6 +133,7 @@ func TestAuthenticationShouldReturn401AndNoTokenWhenBadPassword(t *testing.T) {
 
 	// start the server and setup the request
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
 	l := model.Login{Id: u.Login, Password: "totototototototototototo"}
 	body, _ := json.Marshal(l)
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login",
@@ -143,9 +143,6 @@ func TestAuthenticationShouldReturn401AndNoTokenWhenBadPassword(t *testing.T) {
 	// when
 	resp, err := cli.Do(req)
 
-	// close, remove the db and shutdown the server
-	s.Close()
-	tests.CleanPersistence(conf)
 	// then
 
 	// check the response code and error
