@@ -42,7 +42,8 @@ func (a *Api) handleDockerRegistry(ctx context.Context, w http.ResponseWriter, r
 	} else if r.Method == http.MethodPut {
 		a.onDockerRegistryUpdate(ctx, w, r)
 	} else {
-		// TODO return appropriate http code with a corresponding test
+		// TODO test me
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -53,7 +54,8 @@ func (a *Api) handleDockerRegistries(ctx context.Context, w http.ResponseWriter,
 	} else if r.Method == http.MethodPost {
 		a.onDockerRegistryCreation(ctx, w, r)
 	} else {
-		// TODO return appropriate http code with a corresponding test
+		// TODO test me
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 

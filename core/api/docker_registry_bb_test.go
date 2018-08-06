@@ -15,6 +15,86 @@ import (
 	"github.com/jeromedoucet/dahu/tests"
 )
 
+// test correct rejection of non - sens requests on
+// registries endpoint (a POST operation has not sens on theses kinds of endpoints)
+func TestUnsuportedOperationOnRegistry(t *testing.T) {
+	// given
+	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	registry.GenerateId()
+	registry.LastModificationTime = time.Now().UnixNano()
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry)
+	defer tests.CleanPersistence(conf)
+
+	// update changes
+	registry.Name = "one-test"
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
+
+	// request setup
+	body, _ := json.Marshal(registry)
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/containers/docker/registries/%s",
+		s.URL, registry.Id), bytes.NewBuffer(body))
+	req.Header.Add("Authorization", "Bearer "+tokenStr)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("Expect 404 return code when requesting an unsupported operation on registry endpoint. "+
+			"Got %d", resp.StatusCode)
+	}
+}
+
+// test correct rejection of non - sens requests on
+// registries endpoint (delete has no sens here)
+func TestUnsuportedOperationOnRegistries(t *testing.T) {
+	// given
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
+
+	// update changes
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
+
+	// request setup
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/containers/docker/registries",
+		s.URL), nil)
+	req.Header.Add("Authorization", "Bearer "+tokenStr)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("Expect 404 return code when requesting an unsupported operation on registries endpoint. "+
+			"Got %d", resp.StatusCode)
+	}
+}
+
 // test updating a docker registry
 // without auth token
 func TestUpdateDockerRegistryNotAuthenticated(t *testing.T) {
@@ -166,6 +246,7 @@ func TestUpdateDockerRegistryConflict(t *testing.T) {
 	}
 }
 
+// nominal test case for updating docker registry
 func TestUpdateDockerRegistry(t *testing.T) {
 	// given
 	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
@@ -445,6 +526,7 @@ func TestDeleteDockerRegistry(t *testing.T) {
 	}
 }
 
+// nominal test case for getting one docker registry
 func TestGetDockerRegistry(t *testing.T) {
 	// given
 	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
@@ -494,6 +576,7 @@ func TestGetDockerRegistry(t *testing.T) {
 	}
 }
 
+// test getting one docker registry without authentication
 func TestGetDockerRegistryNotAuthenticated(t *testing.T) {
 	// given
 
@@ -526,6 +609,7 @@ func TestGetDockerRegistryNotAuthenticated(t *testing.T) {
 	}
 }
 
+// test getting an unexisting docker registry
 func TestGetUnknownDockerRegistry(t *testing.T) {
 	// given
 	expectedErrorMsg := "No docker registry with id 1 found"
@@ -568,6 +652,7 @@ func TestGetUnknownDockerRegistry(t *testing.T) {
 	}
 }
 
+// test creating a docker registry without authentication
 func TestCreateANewDockerRegistryNotAuthenticated(t *testing.T) {
 	// given
 	t.SkipNow()
@@ -603,6 +688,7 @@ func TestCreateANewDockerRegistryNotAuthenticated(t *testing.T) {
 	}
 }
 
+// nominal test case for creating a docker registry
 func TestCreateANewDockerRegistry(t *testing.T) {
 	// given
 
