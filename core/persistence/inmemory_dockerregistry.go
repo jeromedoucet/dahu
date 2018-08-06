@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"time"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/jeromedoucet/dahu/core/model"
@@ -23,6 +25,10 @@ func (i *inMemory) CreateDockerRegistry(registry *model.DockerRegistry, ctx cont
 		if updateErr != nil {
 			return updateErr
 		}
+		// initialization of LastModificationDate field
+		// that will be use later for optimistic lock on
+		// update requests.
+		registry.LastModificationTime = time.Now().UnixNano()
 		var data []byte
 		data, updateErr = json.Marshal(registry)
 		if updateErr != nil {
@@ -59,10 +65,6 @@ func (i *inMemory) GetDockerRegistry(id []byte, ctx context.Context) (*model.Doc
 	}
 }
 
-func (i *inMemory) GetDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, PersistenceError) {
-	return nil, nil
-}
-
 func (i *inMemory) DeleteDockerRegistry(id []byte) PersistenceError {
 	err := i.doUpdateAction(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("dockerRegistries"))
@@ -78,4 +80,44 @@ func (i *inMemory) DeleteDockerRegistry(id []byte) PersistenceError {
 		return b.Delete(id)
 	})
 	return wrapError(err)
+}
+
+func (i *inMemory) GetDockerRegistries(ctx context.Context) ([]*model.DockerRegistry, PersistenceError) {
+	registries := make([]*model.DockerRegistry, 0)
+	err := i.doViewAction(func(tx *bolt.Tx) error {
+		var mErr error
+		b := tx.Bucket([]byte("dockerRegistries"))
+		if b == nil {
+			return errors.New("persistence >> CRITICAL error. No bucket for storing docker registries. The database may be corrupted !")
+		}
+		c := b.Cursor()
+		registries, mErr = doFetchDockerRegistries(c, registries)
+		return mErr
+	})
+	if err == nil {
+		return registries, nil
+	} else {
+		return nil, wrapError(err)
+	}
+	return nil, nil
+}
+
+func doFetchDockerRegistries(c *bolt.Cursor, registries []*model.DockerRegistry) ([]*model.DockerRegistry, error) {
+	res := registries
+	for k, v := c.First(); k != nil; k, v = c.Next() {
+		var registry model.DockerRegistry
+		mErr := json.Unmarshal(v, &registry)
+		if mErr != nil {
+			return nil, mErr
+		} else {
+			res = append(res, &registry)
+		}
+	}
+	// bbolt is not a relational db, so there is very little sorting features.
+	// it is very simplier to do that directly in memory, considering the fact
+	// that the size of read data is very small and the sort operation very simple
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Name < res[j].Name
+	})
+	return res, nil
 }

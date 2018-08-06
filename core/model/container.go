@@ -7,11 +7,12 @@ import (
 )
 
 type DockerRegistry struct {
-	Id       []byte `json:"id"`
-	Name     string `json:"name"`
-	Url      string `json:"url"`
-	User     string `json:"user"`
-	Password string `json:"password"`
+	Id                   []byte `json:"id"`
+	Name                 string `json:"name"`
+	Url                  string `json:"url"`
+	User                 string `json:"user"`
+	Password             string `json:"password"`
+	LastModificationTime int64  `json:"lastModificationTime"`
 }
 
 func (r *DockerRegistry) ToPublicModel() {

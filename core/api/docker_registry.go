@@ -33,32 +33,21 @@ func (a *Api) handleDockerRegistryCheck(ctx context.Context, w http.ResponseWrit
 	}
 }
 
-// create a new docker registry. Will fail if there
-// is already an id in the given registry
-func (a *Api) handleDockerRegistryCreation(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	var registry model.DockerRegistry
-	var err error
-	d := json.NewDecoder(r.Body)
-	d.Decode(&registry)
-	var newRegistry *model.DockerRegistry
-	newRegistry, err = a.repository.CreateDockerRegistry(&registry, ctx)
-	if err != nil {
-		log.Printf("ERROR >> dockerRegistryCreation encounter error : %s", err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	newRegistry.ToPublicModel()
-	body, _ := json.Marshal(newRegistry)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	w.Write(body)
-}
-
 func (a *Api) handleDockerRegistry(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		a.onDockerRegistryGet(ctx, w, r)
 	} else if r.Method == http.MethodDelete {
 		a.onDockerRegistryDelete(ctx, w, r)
+	} else {
+		// todo return appropriate http code with a corresponding test
+	}
+}
+
+func (a *Api) handleDockerRegistries(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		a.onDockerRegistriesGet(ctx, w, r)
+	} else if r.Method == http.MethodPost {
+		a.onDockerRegistryCreation(ctx, w, r)
 	} else {
 		// todo return appropriate http code with a corresponding test
 	}
@@ -111,4 +100,55 @@ func (a *Api) onDockerRegistryDelete(ctx context.Context, w http.ResponseWriter,
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+// create a new docker registry. Will fail if there
+// is already an id in the given registry
+func (a *Api) onDockerRegistryCreation(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var registry model.DockerRegistry
+	var err error
+	d := json.NewDecoder(r.Body)
+	d.Decode(&registry)
+	var newRegistry *model.DockerRegistry
+	newRegistry, err = a.repository.CreateDockerRegistry(&registry, ctx)
+	if err != nil {
+		log.Printf("ERROR >> dockerRegistryCreation encounter error : %s", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	newRegistry.ToPublicModel()
+	body, _ := json.Marshal(newRegistry)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(body)
+}
+
+// http handler that deals with get request on all docker registry resources
+func (a *Api) onDockerRegistriesGet(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	registries, persistenceErr := a.repository.GetDockerRegistries(ctx)
+	if persistenceErr != nil {
+		log.Printf("ERROR >> onDockerRegistriesGet encounter error : %s", persistenceErr.Error())
+		body := fromErrorToJson(persistenceErr)
+		if persistenceErr.ErrorType() == persistence.NotFound {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		w.Write(body)
+		return
+	}
+	for _, registry := range registries {
+		registry.ToPublicModel()
+	}
+	body, err := json.Marshal(registries)
+	if err != nil {
+		log.Printf("ERROR >> onDockerRegistriesGet encounter error : %s", err.Error())
+		body := fromErrorToJson(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(body)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
 }

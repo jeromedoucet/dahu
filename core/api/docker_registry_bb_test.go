@@ -15,6 +15,105 @@ import (
 	"github.com/jeromedoucet/dahu/tests"
 )
 
+// test case for docker registry list
+// api endpoint when not authenticated
+func TestListDockerNotAuthenticated(t *testing.T) {
+	// given
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	defer tests.CleanPersistence(conf)
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
+
+	// request setup
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/containers/docker/registries",
+		s.URL), nil)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("Expect 401 return code when trying to list docker registries without authentication. "+
+			"Got %d", resp.StatusCode)
+	}
+}
+
+// Nominal test case for docker registry list
+// api endpoint
+func TestListDockerRegistry(t *testing.T) {
+	// given
+	registry1 := &model.DockerRegistry{Name: "test1", Url: "localhost:5001", User: "tester1", Password: "test1"}
+	registry1.GenerateId()
+	registry2 := &model.DockerRegistry{Name: "test2", Url: "localhost:5002", User: "tester2", Password: "test2"}
+	registry2.GenerateId()
+
+	// configuration
+	conf := configuration.InitConf()
+	conf.ApiConf.Port = 4444
+	conf.ApiConf.Secret = "secret"
+	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry1.Id), registry1)
+	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry2.Id), registry2)
+	defer tests.CleanPersistence(conf)
+
+	// ap start
+	s := httptest.NewServer(api.InitRoute(conf).Handler())
+	defer s.Close()
+
+	// request setup
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/containers/docker/registries",
+		s.URL), nil)
+	req.Header.Add("Authorization", "Bearer "+tokenStr)
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expect 200 return code when trying to list docker registries. "+
+			"Got %d", resp.StatusCode)
+	}
+
+	var registryList []model.DockerRegistry
+	dec := json.NewDecoder(resp.Body)
+	dec.Decode(&registryList)
+	if len(registryList) != 2 {
+		t.Fatalf("expect list docker registries to return 2 elements but got %d", len(registryList))
+	}
+	if registryList[0].Name != registry1.Name {
+		t.Fatalf("expected Name %s from file to equals %s", registryList[0].Name, registry1.Name)
+	}
+	if registryList[0].User != "" {
+		t.Fatalf("expected User to have been removed but got %s", registryList[0].User)
+	}
+	if registryList[0].Password != "" {
+		t.Fatalf("expected Password to have been removed but got %s", registryList[0].Password)
+	}
+	if registryList[1].Name != registry2.Name {
+		t.Fatalf("expected Name %s from file to equals %s", registryList[1].Name, registry2.Name)
+	}
+	if registryList[1].User != "" {
+		t.Fatalf("expected User to have been removed but got %s", registryList[1].User)
+	}
+	if registryList[1].Password != "" {
+		t.Fatalf("expected Password to have been removed but got %s", registryList[1].Password)
+	}
+}
+
 // Test case for docker registry deletion
 // api endpoint when not authenticated
 func TestDeleteDockerRegistryNotAuthenticated(t *testing.T) {
@@ -335,6 +434,9 @@ func TestCreateANewDockerRegistry(t *testing.T) {
 	}
 	if newRegistry.Password != "" {
 		t.Fatalf("expected Password to have been removed but got %s", newRegistry.Password)
+	}
+	if newRegistry.LastModificationTime == int64(0) {
+		t.Fatal("expected LastModificationTime to have initialized but is still 0")
 	}
 }
 
