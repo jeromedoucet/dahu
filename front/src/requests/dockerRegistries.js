@@ -34,3 +34,12 @@ export function updateDockerRegistry(id, registry) {
   })
     .then(handleResponse);
 }
+
+export function testDockerRegistry(registry) {
+  return fetch('/containers/docker/registries/test', {
+    method: "POST",
+    headers: { Authorization: getToken() },
+    body: JSON.stringify(registry)
+  })
+    .then(handleResponse);
+}

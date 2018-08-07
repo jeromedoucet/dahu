@@ -1,5 +1,6 @@
 import fetchMock from "fetch-mock";
 import { 
+  testDockerRegistry,
   createDockerRegistry,
   fetchDockerRegistries,
   deleteDockerRegistry ,
@@ -15,7 +16,36 @@ describe('docker registries requests', () => {
     Cookies.remove(SESSION_COOKIE);
   });
 
-  describe('create docker registries', () => {
+  describe('test docker registry', () => {
+    it('shoud send a post to /containers/docker/registries/test', async () => {
+          // given
+      Cookies.set(SESSION_COOKIE, 'sometoken');
+      const name = 'some-name';
+      const url = 'domaine/registry';
+      const registry = {
+        name,
+        url
+      };
+
+      const dockerRegistryTestMatcher = (callUrl, opt) => {
+        return (
+          callUrl === '/containers/docker/registries/test' &&
+          opt.headers.Authorization === 'Bearer sometoken'  &&
+          JSON.parse(opt.body).name === name &&
+          JSON.parse(opt.body).url === url
+        );
+      };
+
+      fetchMock.postOnce(dockerRegistryTestMatcher, {
+        status: 200
+      });
+
+      // when
+      await expect(testDockerRegistry(registry)).resolves.toEqual({});
+    });
+  });
+
+  describe('create docker registry', () => {
     it('should send a post to /containers/docker/registries', async () => {
       // given
       Cookies.set(SESSION_COOKIE, 'sometoken');
