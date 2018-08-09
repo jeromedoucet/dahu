@@ -99,7 +99,11 @@ func TestUnsuportedOperationOnRegistries(t *testing.T) {
 // without auth token
 func TestUpdateDockerRegistryNotAuthenticated(t *testing.T) {
 	// given
-	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	registry := new(model.DockerRegistryUpdate)
+	registry.Name = "test"
+	registry.Url = "localhost:5000"
+	registry.User = "tester"
+	registry.Password = "test"
 	registry.GenerateId()
 	registry.LastModificationTime = time.Now().UnixNano()
 
@@ -138,7 +142,11 @@ func TestUpdateDockerRegistryNotAuthenticated(t *testing.T) {
 // does not exist
 func TestUpdateUnknownDockerRegistry(t *testing.T) {
 	// given
-	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	registry := new(model.DockerRegistryUpdate)
+	registry.Name = "test"
+	registry.Url = "localhost:5000"
+	registry.User = "tester"
+	registry.Password = "test"
 	registry.GenerateId()
 	registry.LastModificationTime = time.Now().UnixNano()
 
@@ -191,7 +199,11 @@ func TestUpdateUnknownDockerRegistry(t *testing.T) {
 func TestUpdateDockerRegistryConflict(t *testing.T) {
 	// given
 	referenceModificationTime := time.Now().UnixNano()
-	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	registry := new(model.DockerRegistryUpdate)
+	registry.Name = "test"
+	registry.Url = "localhost:5000"
+	registry.User = "tester"
+	registry.Password = "test"
 	registry.GenerateId()
 	registry.LastModificationTime = referenceModificationTime
 
@@ -199,7 +211,7 @@ func TestUpdateDockerRegistryConflict(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
-	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry)
+	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry.DockerRegistry)
 	defer tests.CleanPersistence(conf)
 
 	// update changes
@@ -249,7 +261,11 @@ func TestUpdateDockerRegistryConflict(t *testing.T) {
 // nominal test case for updating docker registry
 func TestUpdateDockerRegistry(t *testing.T) {
 	// given
-	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
+	registry := new(model.DockerRegistryUpdate)
+	registry.Name = "test"
+	registry.Url = "localhost:5000"
+	registry.User = "tester"
+	registry.Password = "test"
 	registry.GenerateId()
 	registry.LastModificationTime = time.Now().UnixNano()
 
@@ -257,11 +273,12 @@ func TestUpdateDockerRegistry(t *testing.T) {
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
-	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry)
+	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry.DockerRegistry)
 	defer tests.CleanPersistence(conf)
 
 	// update changes
 	registry.Name = "one-test"
+	registry.ChangedFields = []string{"Name"}
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())

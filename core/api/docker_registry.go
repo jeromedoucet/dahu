@@ -107,14 +107,13 @@ func (a *Api) onDockerRegistryDelete(ctx context.Context, w http.ResponseWriter,
 }
 
 // http handler that deals with put request on a docker registry resource
-// it update all fields in the resource. Partial update is not supported.
 func (a *Api) onDockerRegistryUpdate(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	var registry model.DockerRegistry
+	var registryUpdate model.DockerRegistryUpdate
 	d := json.NewDecoder(r.Body)
-	d.Decode(&registry)
+	d.Decode(&registryUpdate)
 	path := route.SplitPath(r.URL.Path)
 	registryId := path[len(path)-1]
-	updatedRegistry, persistenceErr := a.repository.UpdateDockerRegistry([]byte(registryId), &registry, ctx)
+	updatedRegistry, persistenceErr := a.repository.UpdateDockerRegistry([]byte(registryId), &registryUpdate, ctx)
 	if updatedRegistry != nil {
 		updatedRegistry.ToPublicModel()
 	}

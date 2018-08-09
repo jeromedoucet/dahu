@@ -39,7 +39,7 @@ type Repository interface {
 	DeleteDockerRegistry(id []byte) PersistenceError
 
 	// update one existing docker registry
-	UpdateDockerRegistry(id []byte, registry *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, PersistenceError)
+	UpdateDockerRegistry(id []byte, registry *model.DockerRegistryUpdate, ctx context.Context) (*model.DockerRegistry, PersistenceError)
 
 	// this call will block until the underlying
 	// connection or persistence system is open.

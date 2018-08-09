@@ -82,7 +82,7 @@ func (i *inMemory) DeleteDockerRegistry(id []byte) PersistenceError {
 	return wrapError(err)
 }
 
-func (i *inMemory) UpdateDockerRegistry(id []byte, registry *model.DockerRegistry, ctx context.Context) (*model.DockerRegistry, PersistenceError) {
+func (i *inMemory) UpdateDockerRegistry(id []byte, registryUpdate *model.DockerRegistryUpdate, ctx context.Context) (*model.DockerRegistry, PersistenceError) {
 	var updatedRegistry model.DockerRegistry
 	err := i.doUpdateAction(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("dockerRegistries"))
@@ -99,11 +99,12 @@ func (i *inMemory) UpdateDockerRegistry(id []byte, registry *model.DockerRegistr
 			return mErr
 		}
 		// optimisitic lock check
-		if existingRegistry.LastModificationTime != registry.LastModificationTime {
+		if existingRegistry.LastModificationTime != registryUpdate.LastModificationTime {
 			updatedRegistry = existingRegistry
 			return newPersistenceError(fmt.Sprintf("Conflict when trying to update registry with id %s", string(id)), Conflict)
 		}
-		registry.LastModificationTime = time.Now().UnixNano()
+		registryUpdate.LastModificationTime = time.Now().UnixNano()
+		registry := registryUpdate.MergeForUpdate(&existingRegistry)
 		data, updateErr := json.Marshal(registry)
 		if updateErr != nil {
 			return updateErr

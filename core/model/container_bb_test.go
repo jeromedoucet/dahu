@@ -2,6 +2,7 @@ package model_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/jeromedoucet/dahu/core/model"
 )
@@ -58,5 +59,43 @@ func TestJobIdGenerationFailed(t *testing.T) {
 	}
 	if string(registry.Id) != string(id) {
 		t.Errorf("expect the Id not to have changed, but got %s", string(registry.Id))
+	}
+}
+
+func TestMergeForUpdate(t *testing.T) {
+	// given
+	registry := &model.DockerRegistry{
+		Name:                 "name",
+		Url:                  "https://some-domain/path",
+		User:                 "some user",
+		Password:             "some password",
+		LastModificationTime: time.Now().UnixNano(),
+	}
+	registryUpdate := new(model.DockerRegistryUpdate)
+	registryUpdate.Name = "updated name"
+	registryUpdate.Url = "https://some-new-domain/path"
+	registryUpdate.User = "some new user"
+	registryUpdate.Password = "some password"
+	registryUpdate.LastModificationTime = time.Now().UnixNano()
+	registryUpdate.ChangedFields = []string{"Name", "Url", "User", "BadField"}
+
+	// when
+	mergedRegistry := registryUpdate.MergeForUpdate(registry)
+
+	// then
+	if mergedRegistry.Name != registryUpdate.Name {
+		t.Fatal("expect the name to have been merged as updated field")
+	}
+	if mergedRegistry.Url != registryUpdate.Url {
+		t.Fatal("expect the url to have been merged as updated field")
+	}
+	if mergedRegistry.User != registryUpdate.User {
+		t.Fatal("expect the user to have been merged as updated field")
+	}
+	if mergedRegistry.Password != registry.Password {
+		t.Fatal("expect the password to have been merged as a non updated field")
+	}
+	if mergedRegistry.LastModificationTime != registryUpdate.LastModificationTime {
+		t.Fatal("expect the LastModificationTime to be the one from registryUpdate")
 	}
 }

@@ -6,6 +6,11 @@ import (
 	"github.com/jeromedoucet/dahu/core/container"
 )
 
+type DockerRegistryUpdate struct {
+	DockerRegistry
+	ChangedFields []string
+}
+
 type DockerRegistry struct {
 	Id                   []byte `json:"id"`
 	Name                 string `json:"name"`
@@ -31,4 +36,23 @@ func (r *DockerRegistry) GenerateId() error {
 		r.Id = id
 	}
 	return err
+}
+
+func (r *DockerRegistryUpdate) MergeForUpdate(currentRegistry *DockerRegistry) *DockerRegistry {
+	res := *currentRegistry
+	for _, fieldName := range r.ChangedFields {
+		switch fieldName {
+		case "Name":
+			res.Name = r.Name
+		case "Url":
+			res.Url = r.Url
+		case "User":
+			res.User = r.User
+		case "Password":
+			res.Password = r.Password
+		default:
+		}
+	}
+	res.LastModificationTime = r.LastModificationTime
+	return &res
 }
