@@ -20,7 +20,7 @@
 				horizontal
 				label="Url"
 				label-for="registry-url-input"
-				description="Url under wich is the registry accessible (registry.gitlab.com for gitlab), default is dockerhub"
+				description="Url under wich is the registry accessible (registry.gitlab.com for gitlab or index.docker.io for dockerhub)"
 			>
 				<b-form-input 
 					id="registry-url-input"
@@ -55,27 +55,43 @@
 					placeholder="Enter password">
 				</b-form-input>
 			</b-form-group>
+      <b-alert 
+        id="registry-success-msg" 
+        class="test-msg" 
+        :show="successMsg !== ''"
+        variant="success"
+      >
+				{{successMsg}}
+      </b-alert>
+      <b-alert 
+        id="registry-failure-msg" 
+        class="test-msg" 
+        :show="errorMsg !== ''" 
+        variant="danger"
+      >
+        {{errorMsg}}
+      </b-alert>
 			<b-row class="my-3" align-h="end">
 				<b-col cols="auto">
 					<button-spin 
-						@click.native="() => {}" 
+						@click.native="testRegistry" 
 						id="registry-test-button"
 						type="button"
 						variant="secondary"
-						:spinning="false"
-						:disabled="true"
-						label="Test it!"
+						:spinning="testPending"
+						:disabled="savePending"
+						label="Test it !"
 					>
 					</button-spin>
 				</b-col>
 				<b-col cols="auto">
 					<button-spin 
-						@click.native="() => {}" 
+						@click.native="saveRegistry" 
 						id="registry-save-button"
 						type="button"
 						variant="primary"
-						:spinning="false"
-						:disabled="true"
+						:spinning="savePending"
+						:disabled="saveDisabled() || testPending"
 						label="Save"
 					>
 					</button-spin>
@@ -87,11 +103,15 @@
 
 <script>
 import ButtonSpin from '@/components/controls/ButtonSpin.vue';
-// todo mark if it's a new or not (id ?)
-// todo copy props to data
-// todo when update, save disable is no change
-// todo test button
-// todo think of feeback messages
+import { 
+	testDockerRegistry,
+	createDockerRegistry,
+	updateDockerRegistry,
+	} from '@/requests/dockerRegistries';
+import { isStringFilled } from '@/misc/validation';
+// details of a docker registry
+// this component has two 'mode'
+// docker registry creation OR docker registry update
 export default {
   components: {
     ButtonSpin
@@ -105,31 +125,129 @@ export default {
   data () {
     return {
 			form: {
+				lastModificationTime: '',
 				name: '',
 				url: '',
 				user: '',
 				password: '',
-			}
+			},
+			isUpdate: false,
+			passwordFake: '',
+      errorMsg: '',
+      successMsg: '',
+			savePending: false,
+			testPending: false,
 		}
 	},
 	methods: {
+    testRegistry: async function() {
+      try {
+        this.resetStatuses();
+				this.testPending = true;
+        await testDockerRegistry(this.form);
+				this.successMsg = "The test is successful";
+      } catch(err) {
+        this.errorMsg = `An error has happend during test : ${err.message.msg}`;
+      } finally {
+				this.testPending = false;
+			}
+    },
+		saveRegistry: async function() {
+      this.resetStatuses();
+			this.savePending = true;
+			if (this.isUpdate) {
+				await this.updateRegistry();
+			} else {
+				await this.createRegistry();
+			}
+		},
+		createRegistry: async function() {
+			try {
+				await createDockerRegistry(this.form);
+				this.$emit('registry-saved')
+			} catch(err) {
+        this.errorMsg = `An error has happend during creation : ${err.message.msg}`;
+			} finally {
+				this.savePending = false;
+			}
+		},
+		updateRegistry: async function() {
+			try {
+				// first compute the deltas
+				// between the original registry
+				// and values in the form. Such mechanisme is
+				// necessary because some fields are not 
+				// fetched for security purposed. Then 
+				// it is not possible to write the entire
+				// content from the form in the db row. We must Know
+				// exactly which fields are changed.
+				const changedFields = [];
+				const fields = Object.keys(this.form);
+				fields.forEach((field) => {
+					if (this.form[field] !== this.registry[field]) {
+						changedFields.push(field);
+					}	
+				});
+				await updateDockerRegistry(this.registry.id, {
+					...this.form,
+					changedFields,
+					});
+				this.$emit('registry-saved')
+			} catch(err) {
+				if (err.status === 409) {
+					this.errorMsg = 'An error has happend during the saving : there is a conflict ! the registry has been reloaded';
+					this.form = err.message;
+				} else {
+					this.errorMsg = `An error has happend during the saving : ${err.message.msg}`;
+				}
+			} finally {
+				this.savePending = false;
+			}
+		},
+		saveDisabled : function() {
+			return !this.createValid() && !this.updateValid()
+		},
+		createValid: function() {
+			return !this.isUpdate && isStringFilled(this.form.name) && isStringFilled(this.form.url);
+		},
+		updateValid: function() {
+			return this.isUpdate && (
+				this.form.name !== this.registry.name ||
+				this.form.url !== this.registry.url ||
+				this.form.user !== this.registry.user ||
+				this.form.password !== this.registry.password
+			);
+		},
+    resetStatuses: function() {
+				this.successMsg = '';
+				this.errorMsg = '';
+    },
 		initForm: function(givenRegistry) {
 			if (givenRegistry) {
 				// update of an existing registry
+				this.isUpdate = true;
+				this.form.lastModificationTime = givenRegistry.lastModificationTime;
 				this.form.name = givenRegistry.name;
+				this.form.url = givenRegistry.url;
+				this.form.user = givenRegistry.user;
+				this.form.password = givenRegistry.password;
 			} else {
 				// creation of a new registry
 				this.form.name = '';
+				this.form.url = '';
+				this.form.user = '';
+				this.form.password = '';
+				this.form.lastModificationTime = '';
+				this.isUpdate = false;
 			}
-		}
+		},
 	},
-	// todo test me !!!
 	beforeMount: function() {
 		this.initForm(this.registry);
 	},
-	// todo test me !!!
 	watch: { 
 		registry: function(newRegistry) {
+      this.resetStatuses();
 			this.initForm(newRegistry);
 		}
 	},

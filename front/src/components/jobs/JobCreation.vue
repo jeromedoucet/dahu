@@ -176,41 +176,41 @@
         >
           {{errorMsg}}
         </b-alert>
-          <b-alert 
-            id="repo-test-success-msg" 
-            class="test-msg" 
-            v-if="isSuccess"
-            show 
-            variant="success"
-          >
-            Repository configuration is correct !
-          </b-alert>
-            <b-row class="my-3" align-h="end">
-              <b-col cols="auto">
-                <button-spin 
-                     @click.native="onTest()" 
-                     id="job-test-button" 
-                     type="button" 
-                     variant="secondary"
-                     :spinning="testPending"
-                     :disabled="creationPending"
-                     label="Test it!"
-                     >
-                </button-spin>
-              </b-col>
-              <b-col cols="auto">
-                <button-spin 
-                     @click.native="onCreate()" 
-                     id="job-creation-button" 
-                     type="submit" 
-                     variant="primary"
-                     :spinning="creationPending"
-                     :disabled="testPending || !isFormValid"
-                     label="Create"
-                     >
-                </button-spin>
-              </b-col>
-            </b-row>
+        <b-alert 
+          id="repo-test-success-msg" 
+          class="test-msg" 
+          v-if="isSuccess"
+          show 
+          variant="success"
+        >
+          Repository configuration is correct !
+        </b-alert>
+          <b-row class="my-3" align-h="end">
+            <b-col cols="auto">
+              <button-spin 
+                   @click.native="onTest()" 
+                   id="job-test-button" 
+                   type="button" 
+                   variant="secondary"
+                   :spinning="testPending"
+                   :disabled="creationPending"
+                   label="Test it!"
+                   >
+              </button-spin>
+            </b-col>
+            <b-col cols="auto">
+              <button-spin 
+                   @click.native="onCreate()" 
+                   id="job-creation-button" 
+                   type="submit" 
+                   variant="primary"
+                   :spinning="creationPending"
+                   :disabled="testPending || !isFormValid"
+                   label="Create"
+                   >
+              </button-spin>
+            </b-col>
+          </b-row>
       </b-container>
     </b-form>
   </div>

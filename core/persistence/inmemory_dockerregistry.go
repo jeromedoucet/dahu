@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"time"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/jeromedoucet/dahu/core/model"
@@ -28,13 +27,13 @@ func (i *inMemory) CreateDockerRegistry(registry *model.DockerRegistry, ctx cont
 		// initialization of LastModificationDate field
 		// that will be use later for optimistic lock on
 		// update requests.
-		registry.LastModificationTime = time.Now().UnixNano()
+		registry.NewLastModificationTime()
 		var data []byte
 		data, updateErr = json.Marshal(registry)
 		if updateErr != nil {
 			return updateErr
 		}
-		updateErr = b.Put(registry.Id, data)
+		updateErr = b.Put([]byte(registry.Id), data)
 		return updateErr
 	})
 	if err == nil {
@@ -103,13 +102,13 @@ func (i *inMemory) UpdateDockerRegistry(id []byte, registryUpdate *model.DockerR
 			updatedRegistry = existingRegistry
 			return newPersistenceError(fmt.Sprintf("Conflict when trying to update registry with id %s", string(id)), Conflict)
 		}
-		registryUpdate.LastModificationTime = time.Now().UnixNano()
+		registryUpdate.NewLastModificationTime()
 		registry := registryUpdate.MergeForUpdate(&existingRegistry)
 		data, updateErr := json.Marshal(registry)
 		if updateErr != nil {
 			return updateErr
 		}
-		updateErr = b.Put(registry.Id, data)
+		updateErr = b.Put([]byte(registry.Id), data)
 		updatedRegistry = *registry
 		return updateErr
 	})

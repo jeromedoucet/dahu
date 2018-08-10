@@ -8,14 +8,22 @@
             button 
             v-on:click="() => selectRegistry(registry)"
             :key="registry.id"
-            :active="selectedRegistry.id === registry.id"
+            :active="!!selectedRegistry && selectedRegistry.id === registry.id"
           >
             {{registry.name}}
+          </b-list-group-item>
+          <b-list-group-item 
+            button 
+            v-on:click="() => selectRegistry(null)"
+            key="-1"
+            :active="!selectedRegistry"
+          >
+            Create a new registry
           </b-list-group-item>
         </b-list-group>
 			</b-col>
 			<b-col cols="8" align-self="center">
-				<registry-details :registry="selectedRegistry">
+				<registry-details :registry="selectedRegistry" v-on:registry-saved="fetchRegistries()">
 				</registry-details>
       </b-col>
     </b-row>
@@ -23,29 +31,37 @@
 </template>
 
 <script>
-// todo default registry ? => explain it
-// todo new button
+// todo test
 import RegistryDetails from '@/components/registries/RegistryDetails.vue'
+import { fetchDockerRegistries } from '@/requests/dockerRegistries';
 export default {
   components: {
 		RegistryDetails,
 	},
   data () {
     return {
-      selectedRegistry: {id: 1, name: 'Private Dockerhub'},
-      registries: [
-        {id: 1, name: 'Private Dockerhub'},
-        {id: 2, name: 'Gitlab registry'},
-        {id: 3, name: 'Private corporate registry'},
-      ],
+      selectedRegistry: null,
+      registries: [],
     }
   },
   methods: {
-    // todo test me !!
     selectRegistry: function(registry) {
       this.selectedRegistry = registry;
+    },
+    fetchRegistries: async function() {
+      try {
+        this.registries = await fetchDockerRegistries();
+				if (this.registries.length > 0) {
+					this.selectedRegistry = this.registries[0];
+				}
+      } catch (err) {
+        // todo error msg
+      }
     }
   },
+	beforeMount: function() {
+		this.fetchRegistries();
+	},
 }
 </script>
 

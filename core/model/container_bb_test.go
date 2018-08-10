@@ -2,7 +2,6 @@ package model_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/jeromedoucet/dahu/core/model"
 )
@@ -21,8 +20,8 @@ func TestRegistryToPublicModel(t *testing.T) {
 	if registry.Url != "localhost:5000" {
 		t.Fatalf("Expect ToPublicModel to preserve Url, but got %s", registry.Url)
 	}
-	if registry.User != "" {
-		t.Fatalf("Expect ToPublicModel to hide User, but got %s", registry.User)
+	if registry.User != "tester" {
+		t.Fatalf("Expect ToPublicModel to preserve User, but got %s", registry.User)
 	}
 	if registry.Password != "" {
 		t.Fatalf("Expect ToPublicModel to hide Password, but got %s", registry.Password)
@@ -40,14 +39,14 @@ func TestJobIdGenerationSuccessFull(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expect #GenerateId to return nil, but got %v", err)
 	}
-	if registry.Id == nil {
+	if registry.Id == "" {
 		t.Errorf("expect the Id to have been generated, but is nil")
 	}
 }
 
 func TestJobIdGenerationFailed(t *testing.T) {
 	// given
-	id := []byte("existingId")
+	id := "existingId"
 	registry := &model.DockerRegistry{Id: id, Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
 
 	// when
@@ -65,19 +64,19 @@ func TestJobIdGenerationFailed(t *testing.T) {
 func TestMergeForUpdate(t *testing.T) {
 	// given
 	registry := &model.DockerRegistry{
-		Name:                 "name",
-		Url:                  "https://some-domain/path",
-		User:                 "some user",
-		Password:             "some password",
-		LastModificationTime: time.Now().UnixNano(),
+		Name:     "name",
+		Url:      "https://some-domain/path",
+		User:     "some user",
+		Password: "some password",
 	}
+	registry.NewLastModificationTime()
 	registryUpdate := new(model.DockerRegistryUpdate)
 	registryUpdate.Name = "updated name"
 	registryUpdate.Url = "https://some-new-domain/path"
 	registryUpdate.User = "some new user"
 	registryUpdate.Password = "some password"
-	registryUpdate.LastModificationTime = time.Now().UnixNano()
-	registryUpdate.ChangedFields = []string{"Name", "Url", "User", "BadField"}
+	registryUpdate.NewLastModificationTime()
+	registryUpdate.ChangedFields = []string{"name", "url", "user", "badField"}
 
 	// when
 	mergedRegistry := registryUpdate.MergeForUpdate(registry)

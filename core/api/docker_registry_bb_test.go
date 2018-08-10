@@ -21,7 +21,7 @@ func TestUnsuportedOperationOnRegistry(t *testing.T) {
 	// given
 	registry := &model.DockerRegistry{Name: "test", Url: "localhost:5000", User: "tester", Password: "test"}
 	registry.GenerateId()
-	registry.LastModificationTime = time.Now().UnixNano()
+	registry.NewLastModificationTime()
 
 	// configuration
 	conf := configuration.InitConf()
@@ -105,7 +105,7 @@ func TestUpdateDockerRegistryNotAuthenticated(t *testing.T) {
 	registry.User = "tester"
 	registry.Password = "test"
 	registry.GenerateId()
-	registry.LastModificationTime = time.Now().UnixNano()
+	registry.NewLastModificationTime()
 
 	// configuration
 	conf := configuration.InitConf()
@@ -148,7 +148,7 @@ func TestUpdateUnknownDockerRegistry(t *testing.T) {
 	registry.User = "tester"
 	registry.Password = "test"
 	registry.GenerateId()
-	registry.LastModificationTime = time.Now().UnixNano()
+	registry.NewLastModificationTime()
 
 	expectedErrorMsg := fmt.Sprintf("No docker registry with id %s found", registry.Id)
 
@@ -198,14 +198,16 @@ func TestUpdateUnknownDockerRegistry(t *testing.T) {
 // the data from db are return with a conflict status.
 func TestUpdateDockerRegistryConflict(t *testing.T) {
 	// given
-	referenceModificationTime := time.Now().UnixNano()
+	// NewLastModificationTime()
 	registry := new(model.DockerRegistryUpdate)
 	registry.Name = "test"
 	registry.Url = "localhost:5000"
 	registry.User = "tester"
 	registry.Password = "test"
 	registry.GenerateId()
-	registry.LastModificationTime = referenceModificationTime
+	registry.NewLastModificationTime()
+
+	referenceModificationTime := registry.LastModificationTime
 
 	// configuration
 	conf := configuration.InitConf()
@@ -216,7 +218,7 @@ func TestUpdateDockerRegistryConflict(t *testing.T) {
 
 	// update changes
 	registry.Name = "one-test"
-	registry.LastModificationTime = time.Now().UnixNano() // force the conflict here
+	registry.NewLastModificationTime() // force the conflict here
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
@@ -247,8 +249,8 @@ func TestUpdateDockerRegistryConflict(t *testing.T) {
 	if updatedRegistry.Name != "test" {
 		t.Fatalf("expected Name %s from file to equals %s", updatedRegistry.Name, "test")
 	}
-	if updatedRegistry.User != "" {
-		t.Fatalf("expected User to have been removed but got %s", updatedRegistry.User)
+	if updatedRegistry.User != "tester" {
+		t.Fatalf("expected User to have been perserved but got %s", updatedRegistry.User)
 	}
 	if updatedRegistry.Password != "" {
 		t.Fatalf("expected Password to have been removed but got %s", updatedRegistry.Password)
@@ -267,7 +269,7 @@ func TestUpdateDockerRegistry(t *testing.T) {
 	registry.User = "tester"
 	registry.Password = "test"
 	registry.GenerateId()
-	registry.LastModificationTime = time.Now().UnixNano()
+	registry.NewLastModificationTime()
 
 	// configuration
 	conf := configuration.InitConf()
@@ -278,7 +280,7 @@ func TestUpdateDockerRegistry(t *testing.T) {
 
 	// update changes
 	registry.Name = "one-test"
-	registry.ChangedFields = []string{"Name"}
+	registry.ChangedFields = []string{"name"}
 
 	// ap start
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
@@ -309,8 +311,8 @@ func TestUpdateDockerRegistry(t *testing.T) {
 	if updatedRegistry.Name != registry.Name {
 		t.Fatalf("expected Name %s from file to equals %s", updatedRegistry.Name, registry.Name)
 	}
-	if updatedRegistry.User != "" {
-		t.Fatalf("expected User to have been removed but got %s", updatedRegistry.User)
+	if updatedRegistry.User != "tester" {
+		t.Fatalf("expected User to have been perserved but got %s", updatedRegistry.User)
 	}
 	if updatedRegistry.Password != "" {
 		t.Fatalf("expected Password to have been removed but got %s", updatedRegistry.Password)
@@ -402,8 +404,8 @@ func TestListDockerRegistry(t *testing.T) {
 	if registryList[0].Name != registry1.Name {
 		t.Fatalf("expected Name %s from file to equals %s", registryList[0].Name, registry1.Name)
 	}
-	if registryList[0].User != "" {
-		t.Fatalf("expected User to have been removed but got %s", registryList[0].User)
+	if registryList[0].User != "tester1" {
+		t.Fatalf("expected User to have been perserved but got %s", registryList[0].User)
 	}
 	if registryList[0].Password != "" {
 		t.Fatalf("expected Password to have been removed but got %s", registryList[0].Password)
@@ -411,8 +413,8 @@ func TestListDockerRegistry(t *testing.T) {
 	if registryList[1].Name != registry2.Name {
 		t.Fatalf("expected Name %s from file to equals %s", registryList[1].Name, registry2.Name)
 	}
-	if registryList[1].User != "" {
-		t.Fatalf("expected User to have been removed but got %s", registryList[1].User)
+	if registryList[1].User != "tester2" {
+		t.Fatalf("expected User to have been perserved but got %s", registryList[1].User)
 	}
 	if registryList[1].Password != "" {
 		t.Fatalf("expected Password to have been removed but got %s", registryList[1].Password)
@@ -585,8 +587,8 @@ func TestGetDockerRegistry(t *testing.T) {
 	if newRegistry.Name != registry.Name {
 		t.Fatalf("expected Name %s from file to equals %s", newRegistry.Name, registry.Name)
 	}
-	if newRegistry.User != "" {
-		t.Fatalf("expected User to have been removed but got %s", newRegistry.User)
+	if newRegistry.User != "tester" {
+		t.Fatalf("expected User to have been perserved but got %s", newRegistry.User)
 	}
 	if newRegistry.Password != "" {
 		t.Fatalf("expected Password to have been removed but got %s", newRegistry.Password)
@@ -745,13 +747,13 @@ func TestCreateANewDockerRegistry(t *testing.T) {
 	if newRegistry.Name != registry.Name {
 		t.Fatalf("expected Name %s from file to equals %s", newRegistry.Name, registry.Name)
 	}
-	if newRegistry.User != "" {
-		t.Fatalf("expected User to have been removed but got %s", newRegistry.User)
+	if newRegistry.User != "tester" {
+		t.Fatalf("expected User to have been perserved but got %s", newRegistry.User)
 	}
 	if newRegistry.Password != "" {
 		t.Fatalf("expected Password to have been removed but got %s", newRegistry.Password)
 	}
-	if newRegistry.LastModificationTime == int64(0) {
+	if newRegistry.LastModificationTime == "" {
 		t.Fatal("expected LastModificationTime to have initialized but is still 0")
 	}
 }
