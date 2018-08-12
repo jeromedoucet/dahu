@@ -27,6 +27,7 @@ export default {
   text-align: center;
   color: #cccccc;
   --darkest-color: #2B3E50;
-  --dark-grey: #4E5D6C
+  --dark-grey: #4E5D6C;
+  --danger: #d9534f;
 }
 </style>

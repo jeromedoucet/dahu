@@ -3,7 +3,7 @@
     <div class="jobs">
       <job-item v-for="job in jobs" :job="job" :key="job.id"/>
         <router-link class="new-job" :to="{path: '/jobs/creation', exact: true}">
-          <i class="fa fa-plus-circle" aria-hidden="true"></i>
+          <new-item/>
         </router-link>
     </div>
     <b-alert 
@@ -18,11 +18,13 @@
 </template>
 <script>
 import JobItem from '@/components/jobs/JobItem.vue'
+import NewItem from '@/components/controls/NewItem.vue'
 import { fetchJobs } from '@/requests/jobs';
 export default {
   // todo type validation of jobs ?
   components: {
-    JobItem
+    JobItem,
+    NewItem,
   },
   data () {
     return {
@@ -50,13 +52,7 @@ export default {
   justify-content: safe center;
 }
 .jobs .new-job {
-  color: #cccccc;
-  font-size: 75px;
-  align-self: center;
   margin-left: 50px;
-}
-.jobs .new-job:hover {
-  color: #ffffff;
-  cursor: pointer;
+  align-self: center;
 }
 </style>

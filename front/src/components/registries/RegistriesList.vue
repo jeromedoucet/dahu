@@ -5,22 +5,19 @@
         <b-list-group>
           <b-list-group-item 
             v-for="registry in registries" 
-            button 
             v-on:click="() => selectRegistry(registry)"
             :key="registry.id"
             :active="!!selectedRegistry && selectedRegistry.id === registry.id"
           >
             {{registry.name}}
-          </b-list-group-item>
-          <b-list-group-item 
-            button 
-            v-on:click="() => selectRegistry(null)"
-            key="-1"
-            :active="!selectedRegistry"
-          >
-            Create a new registry
+            <delete-item 
+              :on-delete="() => deleteRegistry(registry.id)" 
+              v-on:item-deleted="fetchRegistries()" 
+              :item-label="registry.name" 
+            />
           </b-list-group-item>
         </b-list-group>
+        <new-item class="new-registry" @click.native="() => selectRegistry(null)" />
 			</b-col>
 			<b-col cols="8" align-self="center">
 				<registry-details :registry="selectedRegistry" v-on:registry-saved="fetchRegistries()">
@@ -31,12 +28,16 @@
 </template>
 
 <script>
-// todo test
+// todo tests
 import RegistryDetails from '@/components/registries/RegistryDetails.vue'
-import { fetchDockerRegistries } from '@/requests/dockerRegistries';
+import { fetchDockerRegistries, deleteDockerRegistry } from '@/requests/dockerRegistries';
+import DeleteItem from '@/components/controls/DeleteItem';
+import NewItem from '@/components/controls/NewItem.vue'
 export default {
   components: {
 		RegistryDetails,
+    NewItem,
+    DeleteItem,
 	},
   data () {
     return {
@@ -57,7 +58,10 @@ export default {
       } catch (err) {
         // todo error msg
       }
-    }
+    },
+    deleteRegistry: async function(id) {
+      await deleteDockerRegistry(id)
+    },
   },
 	beforeMount: function() {
 		this.fetchRegistries();
@@ -66,4 +70,7 @@ export default {
 </script>
 
 <style scoped>
+.new-registry {
+  margin-top: 5px;
+}
 </style>

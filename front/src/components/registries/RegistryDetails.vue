@@ -1,7 +1,7 @@
 <template>
 	<div id="registry-configuration">
 		<b-form @submit="() => {}">
-			<h3>Registry configuration</h3>
+      <h3>{{title}}</h3>
 			<b-form-group 
 				horizontal
 				label="Name"
@@ -139,6 +139,11 @@ export default {
 			testPending: false,
 		}
 	},
+  computed: {
+    title: function () {
+      return this.isUpdate ? `${this.registry.name} configuration` : 'New docker registry';
+    }
+  },
 	methods: {
     testRegistry: async function() {
       try {
