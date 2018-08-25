@@ -68,3 +68,31 @@ func TestJobIdGenerationShouldBeInErrorIfExistingId(t *testing.T) {
 		t.Errorf("expect the Id not to have changed, but got %s", string(j.Id))
 	}
 }
+
+// case of StepExecution#IsSuccess that return true
+func TestStepExecutionNominal(t *testing.T) {
+	// given
+	stepExecution := model.StepExecution{Status: model.Success}
+
+	// when
+	res := stepExecution.IsSuccess()
+
+	// then
+	if !res {
+		t.Fatal("expect the stepExecution to be successful, but it is not")
+	}
+}
+
+// case of StepExecution#IsSuccess that return false because of failure status
+func TestStepExecutionFailed(t *testing.T) {
+	// given
+	stepExecution := model.StepExecution{Status: model.Failure}
+
+	// when
+	res := stepExecution.IsSuccess()
+
+	// then
+	if res {
+		t.Fatal("expect the stepExecution to be failed, but it is not")
+	}
+}

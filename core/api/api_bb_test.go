@@ -4,14 +4,20 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jeromedoucet/dahu/tests"
+	"github.com/jeromedoucet/dahu-tests/container"
+	"github.com/jeromedoucet/dahu/configuration"
 )
 
+var gitRepoIp string
+
 func TestMain(m *testing.M) {
-	gogsId := tests.StartGogs()
-	registryId := tests.StartDockerRegistry()
+	dockerApiVersion := configuration.DockerApiVersion
+	registryId := container.StartDockerRegistry(dockerApiVersion)
+	gogsId := container.StartGogs(dockerApiVersion)
+	gitRepoDetails := container.FindContainerDetails(gogsId, dockerApiVersion)
+	gitRepoIp = gitRepoDetails.Ip
 	retCode := m.Run()
-	tests.StopContainer(gogsId)
-	tests.StopContainer(registryId)
+	container.StopContainer(gogsId, dockerApiVersion)
+	container.StopContainer(registryId, dockerApiVersion)
 	os.Exit(retCode)
 }

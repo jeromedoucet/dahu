@@ -74,6 +74,10 @@ func (i *inMemory) GetJobs(ctx context.Context) ([]*model.Job, PersistenceError)
 	}
 }
 
+func (i *inMemory) UpsertJobExecution(ctx context.Context, jobId string, execution *model.JobExecution) (*model.JobExecution, PersistenceError) {
+	return nil, nil
+}
+
 func doFetchJobs(c *bolt.Cursor, jobs []*model.Job) ([]*model.Job, error) {
 	res := jobs
 	for k, v := c.First(); k != nil; k, v = c.Next() {

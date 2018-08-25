@@ -1,86 +1,99 @@
 package scm
 
-// TODO : check uncover test case
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
-	"strings"
+	"net/http"
 
-	git "gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
-	ssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
-	"gopkg.in/src-d/go-git.v4/storage/memory"
+	"github.com/jeromedoucet/dahu-git/types"
+	"github.com/jeromedoucet/dahu/core/container"
+	"github.com/jeromedoucet/dahu/core/model"
 )
 
-type gitRepository struct {
-}
-
-func (r gitRepository) CheckConnectionWithoutAuth(url string) ScmError {
-	_, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-		URL:        url,
-		NoCheckout: true,
-	})
-	return fromGitToScmError(err)
-}
-
-func (r gitRepository) CheckConnectionWithIdAndPassword(url string, id string, password string) ScmError {
-	auth := &http.BasicAuth{Username: id, Password: password}
-	_, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-		URL:        url,
-		NoCheckout: true,
-		Auth:       auth,
-	})
-	fmt.Println(err)
-	return fromGitToScmError(err)
-}
-
-func (r gitRepository) CheckConnectionWithPrivateKey(url string, key string, keyPassword string) ScmError {
-	auth, sshError := ssh.NewPublicKeys("git", []byte(key), keyPassword)
-	if sshError != nil {
-		return newScmError(sshError.Error(), SshKeyReadingError)
+// CheckClone is used to check a git repository conf.
+// Because this method is made to be used through
+// the http api only, it returns a http status directly.
+//
+// Internally, it Start a dahu-git container and call it
+// with given GitConfig. If an error append during
+// container handling, 500 http code is returned.
+// Else the return code of the call to dahu-git
+// is forwarded.
+func CheckClone(ctx context.Context, gitConfig model.GitConfig) int {
+	dockerCli := container.DockerClient
+	dahuGitConf := container.ContainerStartConf{
+		ImageName:    "jerdct/dahu-git", // TODO handle tag
+		ExposedPorts: []container.Port{container.Port{Number: "80", Protocol: "tcp"}},
+		WaitFn:       waitForDahuGit,
 	}
-	_, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-		URL:        url,
-		NoCheckout: true,
-		Auth:       auth,
-	})
-	fmt.Println(err)
-	return fromGitToScmError(err)
+	var dahuGit container.ContainerInstance
+	var err error
+	dahuGit, err = dockerCli.StartContainer(ctx, dahuGitConf)
+	if err != nil {
+		return http.StatusInternalServerError
+	}
+
+	stopOptions := container.ContainerStopOptions{Force: true, RemoveVolumes: true}
+	req := buildCheckCloneRequest(gitConfig)
+	var reqStatus int
+	reqStatus, err = doClone(dahuGit.Ip, req)
+	if err != nil {
+		// Don't forget to stop the container anyway !
+		dockerCli.StopContainer(ctx, dahuGit.Id, stopOptions)
+		return http.StatusInternalServerError
+	}
+
+	// for the moment, the choice is make
+	// to consider that the result of the container
+	// stop must be show to the user as a system error.
+	// this is because if we have trouble to stop a simple
+	// container, then the whole system is in deep trouble.
+	// Meaning there is a need for deeper investigations.
+	err = dockerCli.StopContainer(ctx, dahuGit.Id, stopOptions)
+	if err != nil {
+		return http.StatusInternalServerError
+	}
+
+	return reqStatus
 }
 
-func fromGitToScmError(err error) ScmError {
-	if err == nil {
-		return nil
-	}
-	errStr := err.Error()
-	switch err {
-	case transport.ErrRepositoryNotFound:
-		return newScmError(errStr, RepositoryNotFound)
-	case transport.ErrAuthenticationRequired:
-		return newScmError(errStr, BadCredentials)
-	default:
-		if strings.Contains(errStr, "no supported methods remain") {
-			// this error come directly from clientAuthenticate
-			// in client_auth.go from 'golang.org/x/crypto/ssh' package.
-			//
-			// This error generaly means that the private key used for authentication
-			// is not the right one. TODO: maybee use a more specific error ?
-			//
-			// Because the error is thrown through fmt.Errorf function
-			// there is no possibility but checking the text of the error
-			// to detect it !
-			return newScmError(errStr, BadCredentials)
-		} else if strings.Contains(strings.ToLower(errStr), "repository does not exist") {
-			// try to catch ssh error related to inexistant repository.
-			// This kind of error may be treat as 'unknow error' by the underlying
-			// git library (go-git-v4 plumbing/transport/internal/common/common.go)
-			//
-			// Some Pr may improve this handling, but some case may be missing, that's why
-			// we make a try to handle the missing cases here
-			return newScmError(errStr, RepositoryNotFound)
+func waitForDahuGit() error {
+	// todo create a /status endpoint on dahu-git
+	return nil
+}
 
-		} else {
-			return newScmError(errStr, OtherError)
+func buildCheckCloneRequest(g model.GitConfig) types.CloneRequest {
+	req := types.CloneRequest{Branch: "master", NoCheckout: true}
+	if g.HttpAuth != nil {
+		req.UseHttp = true
+		req.HttpAuth = types.HttpAuth{
+			Url:      g.HttpAuth.Url,
+			User:     g.HttpAuth.User,
+			Password: g.HttpAuth.Password,
+		}
+	} else if g.SshAuth != nil {
+		req.UseSsh = true
+		req.SshAuth = types.SshAuth{
+			Url:         g.SshAuth.Url,
+			Key:         g.SshAuth.Key,
+			KeyPassword: g.SshAuth.KeyPassword,
 		}
 	}
+	return req
+}
+
+func doClone(ip string, req types.CloneRequest) (int, error) {
+	defaultStatus := http.StatusInternalServerError
+	body, err := json.Marshal(req)
+	if err != nil {
+		return defaultStatus, err
+	}
+
+	resp, err := http.Post(fmt.Sprintf("http://%s", ip), "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return defaultStatus, err
+	}
+	return resp.StatusCode, nil
 }

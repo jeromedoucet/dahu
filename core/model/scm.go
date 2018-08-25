@@ -1,9 +1,5 @@
 package model
 
-import (
-	"github.com/jeromedoucet/dahu/core/scm"
-)
-
 type HttpAuthConfig struct {
 	Url      string `json:"url"`
 	User     string `json:"user"`
@@ -45,22 +41,6 @@ func (a *SshAuthConfig) ToPublicModel() {
 type GitConfig struct {
 	HttpAuth *HttpAuthConfig `json:"httpAuth"`
 	SshAuth  *SshAuthConfig  `json:"sshAuth"`
-}
-
-func (g GitConfig) CheckCredentials() scm.ScmError {
-	git := scm.GitInstance
-	if g.HttpAuth != nil {
-		// todo add some little units test here for rejections cases
-		if g.HttpAuth.User == "" || g.HttpAuth.Password == "" {
-			return git.CheckConnectionWithoutAuth(g.HttpAuth.Url)
-		} else {
-			return git.CheckConnectionWithIdAndPassword(g.HttpAuth.Url, g.HttpAuth.User, g.HttpAuth.Password)
-		}
-	} else if g.SshAuth != nil {
-		return git.CheckConnectionWithPrivateKey(g.SshAuth.Url, g.SshAuth.Key, g.SshAuth.KeyPassword)
-	} else {
-		panic("not implemented yet")
-	}
 }
 
 // todo test me

@@ -910,7 +910,6 @@ func TestCheckRegistryNoDockerCredential(t *testing.T) {
 
 func TestCheckUnknownRegistry(t *testing.T) {
 	// given
-	expectedErrorMsg := "Error response from daemon: Get https://hotelocal:5000/v2/: dial tcp: lookup hotelocal: no such host"
 	conf := configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
@@ -940,12 +939,5 @@ func TestCheckUnknownRegistry(t *testing.T) {
 	if resp.StatusCode != 404 {
 		t.Fatalf("Expect 404 return code when testing an unknown private docker registry with user / password "+
 			"Got %d", resp.StatusCode)
-	}
-	var apiErr api.ApiError
-	d := json.NewDecoder(resp.Body)
-	d.Decode(&apiErr)
-	if apiErr.Msg != expectedErrorMsg {
-		t.Fatalf("Expect %s message when testing an unknown private docker registry with user / password "+
-			"Got %s", expectedErrorMsg, apiErr.Msg)
 	}
 }

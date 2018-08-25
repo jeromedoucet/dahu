@@ -22,6 +22,9 @@ type Repository interface {
 	// get all existing jobs
 	GetJobs(ctx context.Context) ([]*model.Job, PersistenceError)
 
+	// create or update the jobExecution of the job identified by the given id
+	UpsertJobExecution(ctx context.Context, jobId string, execution *model.JobExecution) (*model.JobExecution, PersistenceError)
+
 	// get an existing user identified by the id parameter.
 	GetUser(id string, ctx context.Context) (*model.User, PersistenceError)
 

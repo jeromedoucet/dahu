@@ -1,6 +1,6 @@
 package model
 
-// Error that mus be used when
+// Error that must be used when
 // trying to update some entity
 // with outdated data
 type outDated struct {

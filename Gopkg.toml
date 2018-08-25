@@ -14,10 +14,6 @@
   branch = "master"
   name = "github.com/jeromedoucet/route"
 
-[[constraint]]
-  name = "gopkg.in/src-d/go-git.v4"
-  version = "4.5.0"
-
 [prune]
   go-tests = true
   unused-packages = true
@@ -33,3 +29,11 @@
 [[override]]
   branch = "master"
   name = "github.com/docker/distribution"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/jeromedoucet/dahu-git"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/jeromedoucet/dahu-tests"

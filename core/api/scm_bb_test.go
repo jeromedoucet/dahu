@@ -29,7 +29,7 @@ func TestCheckWhenNotAuthenticated(t *testing.T) {
 	defer s.Close()
 
 	// request setup
-	authConfig := model.SshAuthConfig{Url: "ssh://git@localhost:10022/tester/test-repo.git", Key: ssh_keys.PrivateUnprotected}
+	authConfig := model.SshAuthConfig{Url: fmt.Sprintf("ssh://git@%s/tester/test-repo.git", gitRepoIp), Key: ssh_keys.PrivateUnprotected}
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/scm/git/repository",
@@ -62,7 +62,7 @@ func TestCheckPrivateRepoConfigurationSshWithMissingKey(t *testing.T) {
 	defer s.Close()
 
 	// request setup
-	authConfig := model.SshAuthConfig{Url: "ssh://git@localhost:10022/tester/test-repo.git"}
+	authConfig := model.SshAuthConfig{Url: fmt.Sprintf("ssh://git@%s/tester/test-repo.git", gitRepoIp)}
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -97,7 +97,7 @@ func TestCheckPrivateRepoConfigurationSshWithUnknownRepository(t *testing.T) {
 	defer s.Close()
 
 	// request setup
-	authConfig := model.SshAuthConfig{Url: "ssh://git@localhost:10022/tester/test-toto-repo.git", Key: ssh_keys.PrivateProtected, KeyPassword: "tester"}
+	authConfig := model.SshAuthConfig{Url: fmt.Sprintf("ssh://git@%s/tester/test-toto-repo.git", gitRepoIp), Key: ssh_keys.PrivateProtected, KeyPassword: "tester"}
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -132,7 +132,7 @@ func TestCheckPrivateRepoConfigurationSshWithBadCredentials(t *testing.T) {
 	defer s.Close()
 
 	// request setup
-	authConfig := model.SshAuthConfig{Url: "ssh://git@localhost:10022/tester/test-repo.git", Key: ssh_keys.PrivateBad}
+	authConfig := model.SshAuthConfig{Url: fmt.Sprintf("ssh://git@%s/tester/test-repo.git", gitRepoIp), Key: ssh_keys.PrivateBad}
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -167,7 +167,7 @@ func TestCheckPrivateRepoConfigurationSshWithPasswordUnSuccessfully(t *testing.T
 	defer s.Close()
 
 	// request setup
-	authConfig := model.SshAuthConfig{Url: "ssh://git@localhost:10022/tester/test-repo.git", Key: ssh_keys.PrivateProtected, KeyPassword: "wrong-key-password"}
+	authConfig := model.SshAuthConfig{Url: fmt.Sprintf("ssh://git@%s/tester/test-repo.git", gitRepoIp), Key: ssh_keys.PrivateProtected, KeyPassword: "wrong-key-password"}
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -202,7 +202,7 @@ func TestCheckPrivateRepoConfigurationSshWithPasswordSuccessfully(t *testing.T) 
 	defer s.Close()
 
 	// request setup
-	authConfig := model.SshAuthConfig{Url: "ssh://git@localhost:10022/tester/test-repo.git", Key: ssh_keys.PrivateProtected, KeyPassword: "tester"}
+	authConfig := model.SshAuthConfig{Url: fmt.Sprintf("ssh://git@%s/tester/test-repo.git", gitRepoIp), Key: ssh_keys.PrivateProtected, KeyPassword: "tester"}
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -237,7 +237,7 @@ func TestCheckPrivateRepoConfigurationSshWithoutPasswordSuccessfully(t *testing.
 	defer s.Close()
 
 	// request setup
-	authConfig := model.SshAuthConfig{Url: "ssh://git@localhost:10022/tester/test-repo.git", Key: ssh_keys.PrivateUnprotected}
+	authConfig := model.SshAuthConfig{Url: fmt.Sprintf("ssh://git@%s/tester/test-repo.git", gitRepoIp), Key: ssh_keys.PrivateUnprotected}
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -272,7 +272,7 @@ func TestCheckPrivateRepoConfigurationHttpBadCredentials(t *testing.T) {
 	defer s.Close()
 
 	// request setup
-	authConfig := model.HttpAuthConfig{Url: "http://localhost:10080/tester/test-repo.git", User: "tester", Password: "wrong-password"}
+	authConfig := model.HttpAuthConfig{Url: fmt.Sprintf("http://%s:3000/tester/test-repo.git", gitRepoIp), User: "tester", Password: "wrong-password"}
 	gitConfig := model.GitConfig{HttpAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -307,7 +307,7 @@ func TestCheckPrivateRepoConfigurationHttpUnknowUrl(t *testing.T) {
 	defer s.Close()
 
 	// request setup
-	authConfig := model.HttpAuthConfig{Url: "http://localhost:10080/tester/unknown.git", User: "tester", Password: "test"}
+	authConfig := model.HttpAuthConfig{Url: fmt.Sprintf("http://%s:3000/tester/unknown.git", gitRepoIp), User: "tester", Password: "test"}
 	gitConfig := model.GitConfig{HttpAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -342,7 +342,7 @@ func TestCheckPrivateRepoConfigurationHttpSuccessfully(t *testing.T) {
 	defer s.Close()
 
 	// request setup
-	authConfig := model.HttpAuthConfig{Url: "http://localhost:10080/tester/test-repo.git", User: "tester", Password: "test"}
+	authConfig := model.HttpAuthConfig{Url: fmt.Sprintf("http://%s:3000/tester/test-repo.git", gitRepoIp), User: "tester", Password: "test"}
 	gitConfig := model.GitConfig{HttpAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
@@ -377,7 +377,7 @@ func TestCheckPublicRepoConfigurationHttpSuccessfully(t *testing.T) {
 	defer s.Close()
 
 	// request setup
-	authConfig := model.HttpAuthConfig{Url: "http://localhost:10080/tester/test-repo-pub.git"}
+	authConfig := model.HttpAuthConfig{Url: fmt.Sprintf("http://%s:3000/tester/test-repo-pub.git", gitRepoIp)}
 	gitConfig := model.GitConfig{HttpAuth: &authConfig}
 	body, _ := json.Marshal(gitConfig)
 	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
