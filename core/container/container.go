@@ -14,6 +14,11 @@ var DockerClient ContainerClient = &dockerClient{
 	clientOpts:       func(cli *client.Client) error { return nil },
 }
 
+type Mount struct {
+	Source      string
+	Destination string
+}
+
 type Port struct {
 	Number   string
 	Protocol string
@@ -22,6 +27,7 @@ type Port struct {
 type ContainerStartConf struct {
 	ImageName    string
 	ExposedPorts []Port
+	Mounts       []Mount
 	WaitFn       func() error
 }
 
@@ -38,6 +44,7 @@ type ContainerStopOptions struct {
 // encapsulate all operations in containers
 type ContainerClient interface {
 	CheckRegistryConnection(ctx context.Context, conf RegistryBasicConf) ContainerError
+	CreateVolume(ctx context.Context, volumeName string) ContainerError
 	StartContainer(ctx context.Context, conf ContainerStartConf) (ContainerInstance, ContainerError)
 	StopContainer(ctx context.Context, id string, options ContainerStopOptions) ContainerError
 }

@@ -8,7 +8,9 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/volume"
 	client "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
@@ -55,8 +57,9 @@ func (d dockerClient) StartContainer(ctx context.Context, conf ContainerStartCon
 	if err != nil {
 		return instance, fromDockerToContainerError(err)
 	}
+	mounts := createMounts(conf.Mounts)
 	containerConf := &container.Config{Image: conf.ImageName, ExposedPorts: exposedPorts}
-	hostConfig := &container.HostConfig{}
+	hostConfig := &container.HostConfig{Mounts: mounts}
 	networkConfig := &network.NetworkingConfig{}
 
 	// the first step is to create the container. It is worth to notice
@@ -105,11 +108,22 @@ func (d dockerClient) StopContainer(ctx context.Context, id string, options Cont
 	if err != nil {
 		return fromDockerToContainerError(err)
 	}
-	defer cli.Close() // todo consider handling the error
+	defer cli.Close()
 
 	removeOpt := types.ContainerRemoveOptions{Force: options.Force, RemoveVolumes: options.RemoveVolumes}
 
 	return fromDockerToContainerError(cli.ContainerRemove(ctx, id, removeOpt))
+}
+
+func (d dockerClient) CreateVolume(ctx context.Context, volumeName string) ContainerError {
+	cli, err := client.NewClientWithOpts(client.WithVersion(d.dockerApiVersion))
+	if err != nil {
+		return fromDockerToContainerError(err)
+	}
+	defer cli.Close()
+
+	_, err = cli.VolumeCreate(ctx, volume.VolumeCreateBody{Name: volumeName})
+	return fromDockerToContainerError(err)
 }
 
 func pullImage(ctx context.Context, imageName string, cli *client.Client) error {
@@ -137,6 +151,14 @@ func createPortsConf(exposedPorts []Port) (nat.PortSet, ContainerError) {
 		res[exposedPort] = empty{}
 	}
 	return res, nil
+}
+
+func createMounts(mounts []Mount) []mount.Mount {
+	res := []mount.Mount{}
+	for _, m := range mounts {
+		res = append(res, mount.Mount{Type: mount.TypeVolume, Source: m.Source, Target: m.Destination})
+	}
+	return res
 }
 
 func fromDockerToContainerError(err error) ContainerError {

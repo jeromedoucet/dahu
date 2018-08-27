@@ -17,7 +17,7 @@ build:
 
 test: build
 	@echo "Running tests..."
-	go test -coverpkg=./... -coverprofile=coverage.out ./...
+	go test -p 1 -coverpkg=./... -coverprofile=coverage.out ./...
 
 showCov: test
 	go tool cover -html=coverage.out

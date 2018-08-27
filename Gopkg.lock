@@ -109,9 +109,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3892241c0e3215c55f07104038059bf69b5bc2bf445a0f9d100f7ea61a776f13"
+  digest = "1:00b850dbe54b51aaa97ba9f2c84ac23f28de20d1f4c778adacee46344198dfac"
   name = "github.com/jeromedoucet/dahu-tests"
-  packages = ["container"]
+  packages = [
+    "container",
+    "ssh",
+  ]
   pruneopts = "UT"
   revision = "bed07c9bb243420d9faaf7be651fc6df64dfbb8f"
 
@@ -194,12 +197,14 @@
     "github.com/dgrijalva/jwt-go",
     "github.com/docker/docker/api/types",
     "github.com/docker/docker/api/types/container",
-    "github.com/docker/docker/api/types/filters",
+    "github.com/docker/docker/api/types/mount",
     "github.com/docker/docker/api/types/network",
+    "github.com/docker/docker/api/types/volume",
     "github.com/docker/docker/client",
     "github.com/docker/go-connections/nat",
     "github.com/jeromedoucet/dahu-git/types",
     "github.com/jeromedoucet/dahu-tests/container",
+    "github.com/jeromedoucet/dahu-tests/ssh",
     "github.com/jeromedoucet/route",
     "golang.org/x/crypto/bcrypt",
   ]

@@ -12,8 +12,8 @@ var gitRepoIp string
 
 func TestMain(m *testing.M) {
 	dockerApiVersion := configuration.DockerApiVersion
-	registryId := container.StartDockerRegistry(dockerApiVersion)
 	gogsId := container.StartGogs(dockerApiVersion)
+	registryId := container.StartDockerRegistry(dockerApiVersion)
 	gitRepoDetails := container.FindContainerDetails(gogsId, dockerApiVersion)
 	gitRepoIp = gitRepoDetails.Ip
 	retCode := m.Run()
