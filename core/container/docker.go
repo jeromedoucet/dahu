@@ -2,7 +2,9 @@ package container
 
 import (
 	"context"
+	"encoding/binary"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -124,6 +126,56 @@ func (d dockerClient) CreateVolume(ctx context.Context, volumeName string) Conta
 
 	_, err = cli.VolumeCreate(ctx, volume.VolumeCreateBody{Name: volumeName})
 	return fromDockerToContainerError(err)
+}
+
+func (d dockerClient) FollowLogs(ctx context.Context, containerId string, logWriter io.Writer) (ContainerError, chan interface{}) {
+	cli, err := client.NewClientWithOpts(client.WithVersion(d.dockerApiVersion))
+	if err != nil {
+		log.Printf("ERROR >> FollowLogs encounter error : %s", err.Error())
+		return fromDockerToContainerError(err), nil
+	}
+	in, err := cli.ContainerLogs(ctx, containerId, types.ContainerLogsOptions{
+		ShowStderr: true,
+		ShowStdout: true,
+		Timestamps: false,
+		Follow:     true,
+		Tail:       "40",
+	})
+	if err != nil {
+		log.Printf("ERROR >> FollowLogs encounter error : %s", err.Error())
+		return fromDockerToContainerError(err), nil
+	}
+	logChan := make(chan interface{})
+	go d.doFollowLogs(logChan, in, logWriter)
+	return nil, logChan
+}
+
+// todo use a context for timeout ?
+func (d dockerClient) doFollowLogs(logChan chan interface{}, in io.ReadCloser, logWriter io.Writer) {
+	hdr := make([]byte, 8)
+	for {
+		_, err := in.Read(hdr)
+		if err != nil {
+			close(logChan)
+			in.Close()
+			if err != io.EOF {
+				log.Printf("ERROR >> doFollowLogs encounter error : %s", err.Error())
+			}
+			return
+		}
+		count := binary.BigEndian.Uint32(hdr[4:])
+		logs := make([]byte, count)
+		_, err = in.Read(logs)
+		if err != nil {
+			close(logChan)
+			in.Close()
+			if err != io.EOF {
+				log.Printf("ERROR >> doFollowLogs encounter error : %s", err.Error())
+			}
+			return
+		}
+		logWriter.Write(logs) // todo handle error
+	}
 }
 
 func pullImage(ctx context.Context, imageName string, cli *client.Client) error {

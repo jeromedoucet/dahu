@@ -58,14 +58,32 @@ func fetchSources(repoConf model.GitConfig, sourcesVolume string, executionConte
 
 	containerCli.CreateVolume(executionContext.Context, sourcesVolume) // todo handle error
 
+	w := new(logWriter)
 	cloneConf := scm.CloneConfiguration{
 		GitConfig:  repoConf,
 		BranchName: executionContext.BranchName,
 		VolumeName: sourcesVolume,
+		LogWriter:  w,
 	}
 
-	// todo pass something to pipe the logs
-	// todo think of persistence, and log persistence.
-	scm.Clone(executionContext.Context, cloneConf) // todo handle error
-	return model.StepExecution{Name: "Code fetching", Status: model.Success}
+	err := scm.Clone(executionContext.Context, cloneConf)
+	var status model.ExecutionStatus
+	if err == nil {
+		status = model.Success
+	} else {
+		status = model.Failure
+	}
+	return model.StepExecution{Name: "Code fetching", Status: status, Logs: string(w.logs)}
+}
+
+type logWriter struct {
+	logs []byte
+}
+
+func (l *logWriter) Write(p []byte) (n int, err error) {
+	// for the moment, the implementation is pretty naive.
+	// we must consider buffering the logs directly to persistence
+	// layer instead
+	l.logs = append(l.logs, p...)
+	return len(p), nil
 }

@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"io"
 
 	client "github.com/docker/docker/client"
 	"github.com/jeromedoucet/dahu/configuration"
@@ -47,6 +48,7 @@ type ContainerClient interface {
 	CreateVolume(ctx context.Context, volumeName string) ContainerError
 	StartContainer(ctx context.Context, conf ContainerStartConf) (ContainerInstance, ContainerError)
 	StopContainer(ctx context.Context, id string, options ContainerStopOptions) ContainerError
+	FollowLogs(ctx context.Context, containerId string, logWriter io.Writer) (ContainerError, chan interface{})
 }
 
 type RegistryBasicConf struct {

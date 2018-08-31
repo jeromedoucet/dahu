@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/jeromedoucet/dahu-git/types"
@@ -38,12 +40,7 @@ func CheckClone(ctx context.Context, gitConfig model.GitConfig) int {
 	stopOptions := container.ContainerStopOptions{Force: true, RemoveVolumes: true}
 	req := buildCheckCloneRequest(gitConfig)
 	var reqStatus int
-	reqStatus, err = doClone(dahuGit.Ip, req)
-	if err != nil {
-		// Don't forget to stop the container anyway !
-		dockerCli.StopContainer(ctx, dahuGit.Id, stopOptions)
-		return http.StatusInternalServerError
-	}
+	reqStatus = doCloneForHttp(dahuGit.Ip, req)
 
 	// for the moment, the choice is make
 	// to consider that the result of the container
@@ -83,6 +80,7 @@ type CloneConfiguration struct {
 	GitConfig  model.GitConfig
 	BranchName string
 	VolumeName string
+	LogWriter  io.Writer
 }
 
 func Clone(ctx context.Context, conf CloneConfiguration) error {
@@ -110,12 +108,20 @@ func Clone(ctx context.Context, conf CloneConfiguration) error {
 		return err
 	}
 
+	var waitLog chan interface{}
+	err, waitLog = dockerCli.FollowLogs(ctx, dahuGit.Id, conf.LogWriter)
+
+	if err != nil {
+		return err
+	}
+
 	stopOptions := container.ContainerStopOptions{Force: true, RemoveVolumes: true}
 	req := buildCloneRequest(conf)
-	_, err = doClone(dahuGit.Ip, req)
+	err = doCloneForJob(dahuGit.Ip, req)
 	if err != nil {
 		// Don't forget to stop the container anyway !
 		dockerCli.StopContainer(ctx, dahuGit.Id, stopOptions)
+		<-waitLog
 		return err
 	}
 
@@ -126,9 +132,7 @@ func Clone(ctx context.Context, conf CloneConfiguration) error {
 	// container, then the whole system is in deep trouble.
 	// Meaning there is a need for deeper investigations.
 	err = dockerCli.StopContainer(ctx, dahuGit.Id, stopOptions)
-	if err != nil {
-		return err
-	}
+	<-waitLog
 
 	return err
 }
@@ -158,16 +162,30 @@ func waitForDahuGit() error {
 	return nil
 }
 
-func doClone(ip string, req types.CloneRequest) (int, error) {
+func doCloneForJob(ip string, req types.CloneRequest) error {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+	resp, err := http.Post(fmt.Sprintf("http://%s", ip), "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	} else if resp.StatusCode != http.StatusOK {
+		return errors.New("ERROR >> Error cloning the repo")
+	}
+	return nil
+}
+
+func doCloneForHttp(ip string, req types.CloneRequest) int {
 	defaultStatus := http.StatusInternalServerError
 	body, err := json.Marshal(req)
 	if err != nil {
-		return defaultStatus, err
+		return defaultStatus
 	}
 
 	resp, err := http.Post(fmt.Sprintf("http://%s", ip), "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		return defaultStatus, err
+		return defaultStatus
 	}
-	return resp.StatusCode, nil
+	return resp.StatusCode
 }

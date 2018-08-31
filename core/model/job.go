@@ -107,10 +107,10 @@ type JobExecution struct {
 // contains everything related to
 // one execution of a step of a particular job execution
 type StepExecution struct {
-	Name          string
-	Status        ExecutionStatus // status of the step execution
-	Duration      time.Duration   // global duration of the step execution
-	LogVolumeName string          // the name where the logs are stored
+	Name     string
+	Status   ExecutionStatus // status of the step execution
+	Duration time.Duration   // global duration of the step execution
+	Logs     string          // logs attached to the step
 }
 
 func (e StepExecution) IsSuccess() bool {
