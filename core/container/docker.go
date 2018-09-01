@@ -93,7 +93,7 @@ func (d dockerClient) StartContainer(ctx context.Context, conf ContainerStartCon
 	// to check if the container is ready, it must be executed now.
 	if conf.WaitFn != nil {
 		// TODO set a time out here !
-		err = conf.WaitFn()
+		err = conf.WaitFn(inspectResult.NetworkSettings.IPAddress)
 		if err != nil {
 			return instance, fromDockerToContainerError(err)
 		}

@@ -2,6 +2,7 @@ package job
 
 import (
 	"context"
+	"log"
 
 	"github.com/jeromedoucet/dahu/core/container"
 	"github.com/jeromedoucet/dahu/core/model"
@@ -51,26 +52,36 @@ func Start(job model.Job) error {
 	return nil
 }
 
-// todo, pass the gitVolumeName
-func fetchSources(repoConf model.GitConfig, sourcesVolume string, executionContext ExecutionContext) (stepExecution model.StepExecution) {
+type execution struct {
+	job              model.Job
+	executionContext ExecutionContext
+	sourcesVolume    string
+}
+
+func (e execution) fetchSources() (stepExecution model.StepExecution) {
+	// this must be a part of execution type, which will contains the job model and the execution context
+	// such type will help to expose some Methods like Cancel ?
+
 	//var err error
 	containerCli := container.DockerClient
 
-	containerCli.CreateVolume(executionContext.Context, sourcesVolume) // todo handle error
+	containerCli.CreateVolume(e.executionContext.Context, e.sourcesVolume) // todo handle error
 
 	w := new(logWriter)
+
 	cloneConf := scm.CloneConfiguration{
-		GitConfig:  repoConf,
-		BranchName: executionContext.BranchName,
-		VolumeName: sourcesVolume,
+		GitConfig:  e.job.GitConf,
+		BranchName: e.executionContext.BranchName,
+		VolumeName: e.sourcesVolume,
 		LogWriter:  w,
 	}
 
-	err := scm.Clone(executionContext.Context, cloneConf)
+	err := scm.Clone(e.executionContext.Context, cloneConf)
 	var status model.ExecutionStatus
 	if err == nil {
 		status = model.Success
 	} else {
+		log.Printf("Job >> issue when fetching sources %s", err.Error())
 		status = model.Failure
 	}
 	return model.StepExecution{Name: "Code fetching", Status: status, Logs: string(w.logs)}

@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/jeromedoucet/dahu-git/types"
 	"github.com/jeromedoucet/dahu/core/container"
@@ -116,6 +118,7 @@ func Clone(ctx context.Context, conf CloneConfiguration) error {
 	}
 
 	stopOptions := container.ContainerStopOptions{Force: true, RemoveVolumes: true}
+
 	req := buildCloneRequest(conf)
 	err = doCloneForJob(dahuGit.Ip, req)
 	if err != nil {
@@ -157,9 +160,21 @@ func buildCloneRequest(conf CloneConfiguration) types.CloneRequest {
 	return req
 }
 
-func waitForDahuGit() error {
-	// todo create a /status endpoint on dahu-git
-	return nil
+func waitForDahuGit(ip string) error {
+	try := 0
+	for {
+		if try > 20 {
+			return errors.New("ERROR => dahu-git unreachable")
+		}
+		resp, err := http.Get(fmt.Sprintf("http://%s/status", ip))
+		try++
+		if err != nil || resp.StatusCode != http.StatusOK {
+			log.Printf("Failed to reach dah-git at %d attempt", try)
+			<-time.After(1 * time.Second)
+		} else {
+			return nil
+		}
+	}
 }
 
 func doCloneForJob(ip string, req types.CloneRequest) error {
@@ -167,7 +182,7 @@ func doCloneForJob(ip string, req types.CloneRequest) error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(fmt.Sprintf("http://%s", ip), "application/json", bytes.NewBuffer(body))
+	resp, err := http.Post(fmt.Sprintf("http://%s/clone", ip), "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	} else if resp.StatusCode != http.StatusOK {
@@ -183,7 +198,7 @@ func doCloneForHttp(ip string, req types.CloneRequest) int {
 		return defaultStatus
 	}
 
-	resp, err := http.Post(fmt.Sprintf("http://%s", ip), "application/json", bytes.NewBuffer(body))
+	resp, err := http.Post(fmt.Sprintf("http://%s/clone", ip), "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return defaultStatus
 	}

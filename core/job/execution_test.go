@@ -34,9 +34,11 @@ func TestFetchSourcesWithKeyAuth(t *testing.T) {
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	executionContext := ExecutionContext{BranchName: "master", Context: context.Background(), JobName: "test", ExecutionId: "1"}
 	gitVolumeName := fmt.Sprintf("%s-%s-sources", executionContext.JobName, executionContext.ExecutionId)
+	job := model.Job{GitConf: gitConfig}
+	exec := execution{executionContext: executionContext, job: job, sourcesVolume: gitVolumeName}
 
 	// when
-	stepExecution := fetchSources(gitConfig, gitVolumeName, executionContext)
+	stepExecution := exec.fetchSources()
 
 	// then
 	if stepExecution.Name != "Code fetching" {
@@ -62,9 +64,11 @@ func TestFetchSourcesWithBadAuth(t *testing.T) {
 	gitConfig := model.GitConfig{SshAuth: &authConfig}
 	executionContext := ExecutionContext{BranchName: "master", Context: context.Background(), JobName: "test", ExecutionId: "1"}
 	gitVolumeName := fmt.Sprintf("%s-%s-sources", executionContext.JobName, executionContext.ExecutionId)
+	job := model.Job{GitConf: gitConfig}
+	exec := execution{executionContext: executionContext, job: job, sourcesVolume: gitVolumeName}
 
 	// when
-	stepExecution := fetchSources(gitConfig, gitVolumeName, executionContext)
+	stepExecution := exec.fetchSources()
 
 	// then
 	if stepExecution.Name != "Code fetching" {

@@ -29,7 +29,7 @@ type ContainerStartConf struct {
 	ImageName    string
 	ExposedPorts []Port
 	Mounts       []Mount
-	WaitFn       func() error
+	WaitFn       func(ip string) error
 }
 
 type ContainerInstance struct {
