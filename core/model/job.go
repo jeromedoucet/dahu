@@ -13,11 +13,12 @@ import (
 
 // configuration of a dahu job
 type Job struct {
-	Id         []byte         `json:"id"`         // id of the job
-	Name       string         `json:"name"`       // simple label used for display
-	GitConf    GitConfig      `json:"gitConfig"`  // repository configuration
-	Steps      []Step         `json:"steps"`      // job steps execution
-	Executions []JobExecution `json:"executions"` // list of past executions that are still available
+	Id              []byte         `json:"id"`              // id of the job
+	Name            string         `json:"name"`            // simple label used for display
+	GitConf         GitConfig      `json:"gitConfig"`       // repository configuration
+	Steps           []Step         `json:"steps"`           // job steps execution
+	Executions      []JobExecution `json:"executions"`      // list of past executions that are still available
+	RemoveWorkspace bool           `json:"removeWorkspace"` // if true, the workspace is removed after every execution of the job
 }
 
 func (j *Job) GenerateId() error {
@@ -48,9 +49,10 @@ func (j *Job) ToPublicModel() {
 // Optionnally, some dependencies may
 // be defined.
 type Step struct {
-	Name          string     // display name of the step
-	Image         Image      // the image that contains the needed dependencies for this step (node, golang, java, etc...)
-	Command       string     // the command of the step
+	Name          string // display name of the step
+	Image         Image  // the image that contains the needed dependencies for this step (node, golang, java, etc...)
+	Envs          map[string]string
+	Command       []string   // the command of the step
 	MountingPoint string     // the place where the volume should be mounted. TODO think of a default value ?
 	Services      []Services // services that are needed for this step. For example a Database for an integration tests step.
 }
@@ -71,6 +73,7 @@ type Services struct {
 type Image struct {
 	Name       string // Name of the image
 	RegistryId string // external key to a registry configuration
+	Registry   *DockerRegistry
 }
 
 // Port exposed by a
@@ -86,22 +89,30 @@ type Port struct {
 type ExecutionStatus string
 
 const (
-	Pending ExecutionStatus = "pending"
-	Running ExecutionStatus = "running"
-	Success ExecutionStatus = "success"
-	Failure ExecutionStatus = "failure"
-	Aborted ExecutionStatus = "aborted"
+	Pending  ExecutionStatus = "pending"
+	Running  ExecutionStatus = "running"
+	Success  ExecutionStatus = "success"
+	Failure  ExecutionStatus = "failure"
+	Canceled ExecutionStatus = "canceled"
 )
 
 // contains everything related to
 // one particular execution of a Job
 type JobExecution struct {
-	Id         string          // the id of this execution Job. Used to update on particular execution
-	VolumeName string          // the name of the volume where the workspace is stored
-	Steps      []StepExecution // execution of step related to that job execution
-	Date       time.Time       // the instant when the job execution has start
-	Duration   time.Duration   // global duration of the job execution
-	// todo trigger ? User Name ?
+	Id         string // the id of this execution Job. Used to update on particular execution
+	BranchName string
+	VolumeName string           // the name of the volume where the workspace is stored
+	Steps      []*StepExecution // execution of step related to that job execution
+	Date       time.Time        // the instant when the job execution has start
+	Duration   time.Duration    // global duration of the job execution
+}
+
+func (j *JobExecution) GenerateId() error {
+	id, err := generateId([]byte(j.Id))
+	if err == nil {
+		j.Id = string(id)
+	}
+	return err
 }
 
 // contains everything related to

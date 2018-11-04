@@ -22,7 +22,7 @@ func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
 	scmConf := model.GitConfig{SshAuth: &sshAuth}
 	job := model.Job{Name: "dahu", GitConf: scmConf}
 	body, _ := json.Marshal(job)
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
@@ -45,7 +45,7 @@ func TestCreateANewJobShouldReturn401WithoutAToken(t *testing.T) {
 
 func TestListJobsShouldReturn401WithoutAToken(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	defer tests.CleanPersistence(conf)
 	s := httptest.NewServer(api.InitRoute(conf).Handler())
@@ -69,7 +69,7 @@ func TestCreateANewJobShouldReturn401WhenBadCredentials(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -105,7 +105,7 @@ func TestListJobsShouldReturn401WhenBadCredentials(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -137,7 +137,7 @@ func TestCreateANewJobShouldReturn401WhenTokenOutDated(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -173,7 +173,7 @@ func TestListJobsShouldReturn401WhenTokenOutDated(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -205,7 +205,7 @@ func TestCreateANewJobShouldReturn400WhenInvalidJob(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -241,7 +241,7 @@ func TestCreateANewJobShouldReturn500WhenErroOnPersistenceLayer(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.DeletePersistence(conf)
@@ -280,7 +280,7 @@ func TestCreateANewJobShouldCreateAndPersistAJob(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -321,13 +321,13 @@ func TestListJobsShouldReturnAllJobs(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
 	jobs := generateJobs(4)
 	for _, job := range jobs {
-		tests.InsertObject(conf, []byte("jobs"), []byte(job.Id), job)
+		tests.InsertObject(conf, []byte("jobs"), job.Id, job)
 	}
 
 	// ap start

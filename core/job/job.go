@@ -1,100 +1,323 @@
+// job package is where job execution logic is. Such execution has step. Basically,
+// step are a logical split of the process, for instance "run tests" or "deploy build".
+// The first step is implicit and alway exist: fetching the repository from svc server.
+//
+// - SVC step
+// The code handling this process is not included in that package. A dedicated container is used
+// to perform the job. This allow to have less code in the dahu core and to extend capabilities easily.
+// Such pattern is heavily used in Dahu. The local copy of sources is stored in a docker volume that will
+// be available for the next steps.
+//
+// - User-defined steps
+// This is the business logic of the job. typically, you may have one step to fetch dependencies,
+// then one or two steps for the tests and finally build deployment and notifications.
+// To run a step, Dahu will pull an image (from a public or a private repository), start if needed some
+// required services (see bellow), and start a container from the pulled images with a given command
+// and some properties and configuration options. This container is executed in a dedicated network.
+// This is required for services (see bellow).
+// If the step stop successfully, the next step will be started. if not, the job stop.
+//
+// - Services
+// For some kind of steps (integration test for example), some running process are needed. Dahu has the concept of
+// service to fill that need. A service is a dependency of a step and consist of a docker image with some configuration options.
+// It is run inside the same network than the related step and is not reachable from outside. Services are accessible through there
+// names from the step container.
+//
+// - Cancelation
+// Steps can be canceled anytime. To achieve that, there is an internal scheduler keeping a reference to a channel for all job execution process.
+// When an execution start, it is registered on that scheduler. The unregistration is done at the end of the execution, regardless of the result.
+//
+// - Notifications
+// A websocket channel is available to listen for job executions's events. An event may be a job start, a job stop, a step start, a step stop or a log event.
+
 package job
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"log"
+	"strings"
 
+	"github.com/jeromedoucet/dahu/configuration"
 	"github.com/jeromedoucet/dahu/core/container"
 	"github.com/jeromedoucet/dahu/core/model"
+	"github.com/jeromedoucet/dahu/core/persistence"
 	"github.com/jeromedoucet/dahu/core/scm"
 )
 
-// how it should work
-// 1. Job submit :
-//     - one job structure is passed to 'Start' function
-//     - if dahu is closing, an error is returned (through recovering a panic cause by writting in a closed channel)
-//     - if not, an execution start (a goroutine - with context ? - is started), and nil is returned
-
-// 2. Job execution :
-//     - initialization of jobExecution instance with default instance and save. Must add an update with jobId and JobExecution (with an id) and don't erase running one
-//     A : git clone
-//       - update the jobExecution for the first step status => running
-//       - git clone the correct branch and target a docker volume. Stdout of clone should be saved and update the JobExecution with right status (success or failed) and the
-//       volume name
-//       - if failed, stop.
-//       - else go to next
-
-// note on job execution persistence. Must keep the volume + the logs + the status of each step
-
-// note on gracefull shutdown. TODO
-
-// note on configuration : websocket should be passed as an optional entry, branch as a mandatory one
-
-// note on scm pull => include it as the first step
-
-// note => handle the context.Context corretly
-
-// this contains all contextual
-// resources of the build. Branch Name,
-// webSocket connection for 'live' notifications
-// or the event that trigger the build
-//
-// some of this information are lately
-// saved into the model (for exemple the branch bane)
-type ExecutionContext struct {
-	BranchName  string
-	Context     context.Context // todo test non-nil ?
-	JobName     string          // TODO clean the string somewhere to match docker volume name requirement
-	ExecutionId string
+// Start launch a new job execution. It runs in a dedicated goroutine.
+func Start(job model.Job, branchName string, conf *configuration.Conf, ctx context.Context) model.JobExecution {
+	jobExecution := model.JobExecution{BranchName: branchName}
+	jobExecution.GenerateId()
+	e := execution{
+		job:           job,
+		jobExecution:  jobExecution,
+		ctx:           ctx,
+		sourcesVolume: fmt.Sprintf("%s-%s-sources", job.Name, jobExecution.Id),
+		conf:          conf,
+		repository:    persistence.GetRepository(conf),
+	}
+	go e.run()
+	return jobExecution
 }
 
-func Start(job model.Job) error {
-	return nil
-}
-
+// Inner type that contains all informations
+// on a job execution. The job itself, its context,
+// and some related information like the name of
+// the volume where the sources are.
 type execution struct {
-	job              model.Job
-	executionContext ExecutionContext
-	sourcesVolume    string
+	cancelChan    chan interface{}
+	job           model.Job
+	jobExecution  model.JobExecution
+	ctx           context.Context
+	sourcesVolume string
+	conf          *configuration.Conf
+	repository    persistence.Repository
 }
 
-func (e execution) fetchSources() (stepExecution model.StepExecution) {
-	// this must be a part of execution type, which will contains the job model and the execution context
-	// such type will help to expose some Methods like Cancel ?
+// Run contains the main loop of a job execution process.
+// it start each step of an execution and handle their result.
+func (e execution) run() {
 
-	//var err error
+	e.cancelChan = registerJobExecution(string(e.job.Id), e.jobExecution.Id)
+
+	Broadcast(string(e.job.Id), model.Event{
+		Type:        model.JobStart,
+		ExecutionId: e.jobExecution.Id,
+		Value:       fmt.Sprintf("Start execute job %s on branch %s", e.job.Name, e.jobExecution.BranchName),
+	})
+
+	fetchExecution := &model.StepExecution{Name: "Code fetching", Status: model.Running}
+	e.jobExecution.Steps = append(e.jobExecution.Steps, fetchExecution)
+
+	e.repository.UpsertJobExecution(e.ctx, string(e.job.Id), &e.jobExecution)
+	e.fetchSources(fetchExecution)
+	e.repository.UpsertJobExecution(e.ctx, string(e.job.Id), &e.jobExecution)
+
+	if fetchExecution.Status == model.Success {
+		for _, step := range e.job.Steps {
+
+			stepExecution := &model.StepExecution{Name: step.Name, Status: model.Running}
+			e.jobExecution.Steps = append(e.jobExecution.Steps, stepExecution)
+
+			e.repository.UpsertJobExecution(e.ctx, string(e.job.Id), &e.jobExecution)
+			e.executeStep(step, stepExecution)
+			e.repository.UpsertJobExecution(e.ctx, string(e.job.Id), &e.jobExecution)
+
+			if stepExecution.Status == model.Failure || stepExecution.Status == model.Canceled {
+				e.endJob(stepExecution.Status)
+				return
+			}
+		}
+	} else {
+		e.endJob(model.Failure)
+		return
+	}
+	e.endJob(model.Success)
+}
+
+// endJob handle terminal operation of a job execution. Workspace
+// cleaning, end event broacasting, execution unregistrations...
+func (e execution) endJob(terminationStatus model.ExecutionStatus) {
+	if e.job.RemoveWorkspace {
+		containerCli := container.DockerClient
+		err := containerCli.RemoveVolume(e.ctx, e.sourcesVolume) // TODO handle that error a clean way
+		if err != nil {
+			log.Printf("ERROR >> run encounter error : %s", err.Error())
+		}
+	}
+	if terminationStatus == model.Success {
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.JobSucceed,
+			ExecutionId: e.jobExecution.Id,
+			Value:       fmt.Sprintf("Finished job %s execution on branch %s", e.job.Name, e.jobExecution.BranchName),
+		})
+	} else if terminationStatus == model.Failure {
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.JobFailed,
+			ExecutionId: e.jobExecution.Id,
+			Value:       fmt.Sprintf("Finished job %s execution on branch %s with failure", e.job.Name, e.jobExecution.BranchName),
+		})
+	} else {
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.JobCanceled,
+			ExecutionId: e.jobExecution.Id,
+			Value:       fmt.Sprintf("Canceled job %s execution on branch %s", e.job.Name, e.jobExecution.BranchName),
+		})
+	}
+	// Don't forget that. This is permit to clean references
+	// in the job execution scheduler.
+	unRegisterJobExecution(string(e.job.Id), e.jobExecution.Id)
+	e.repository.UpsertJobExecution(e.ctx, string(e.job.Id), &e.jobExecution)
+}
+
+// fetchSources is the first step of a job execution. Like
+// its mame suggests, it will get the sources.
+func (e execution) fetchSources(stepExecution *model.StepExecution) {
+
+	Broadcast(string(e.job.Id), model.Event{
+		Type:        model.StepStart,
+		ExecutionId: e.jobExecution.Id,
+		Value:       "Start fetching code",
+	})
+
 	containerCli := container.DockerClient
 
-	containerCli.CreateVolume(e.executionContext.Context, e.sourcesVolume) // todo handle error
+	containerCli.CreateVolume(e.ctx, e.sourcesVolume) // TODO handle error
 
-	w := new(logWriter)
+	w := &logWriter{
+		jobId:       string(e.job.Id),
+		executionId: e.jobExecution.Id,
+	}
 
 	cloneConf := scm.CloneConfiguration{
 		GitConfig:  e.job.GitConf,
-		BranchName: e.executionContext.BranchName,
+		BranchName: e.jobExecution.BranchName,
 		VolumeName: e.sourcesVolume,
 		LogWriter:  w,
 	}
 
-	err := scm.Clone(e.executionContext.Context, cloneConf)
-	var status model.ExecutionStatus
+	err := scm.Clone(e.ctx, cloneConf)
 	if err == nil {
-		status = model.Success
+		stepExecution.Status = model.Success
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.StepSucceed,
+			ExecutionId: e.jobExecution.Id,
+			Value:       "Succeed fetching code",
+		})
 	} else {
 		log.Printf("Job >> issue when fetching sources %s", err.Error())
-		status = model.Failure
+		stepExecution.Status = model.Failure
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.StepFailed,
+			ExecutionId: e.jobExecution.Id,
+			Value:       "Failed fetching code",
+		})
 	}
-	return model.StepExecution{Name: "Code fetching", Status: status, Logs: string(w.logs)}
+	stepExecution.Logs = string(w.logs)
+}
+
+// executeStep is responsible for preparing a step, run it, notifying
+// events.
+// It heavily rely on container package, that abstract container manipulations.
+func (e execution) executeStep(step model.Step, stepExecution *model.StepExecution) {
+	Broadcast(string(e.job.Id), model.Event{
+		Type:        model.StepStart,
+		ExecutionId: e.jobExecution.Id,
+		Value:       fmt.Sprintf("Start %s", step.Name),
+	})
+
+	registryToken := getRegistryAuth(step)
+
+	dockerCli := container.DockerClient
+	mounts := []container.Mount{container.Mount{Source: e.sourcesVolume, Destination: step.MountingPoint}}
+	stepConf := container.ContainerStartConf{
+		ImageName:     step.Image.Name,
+		RegistryToken: registryToken,
+		Mounts:        mounts,
+		Command:       step.Command,
+		WorkingDir:    step.MountingPoint,
+		Envs:          step.Envs,
+	}
+
+	c, err := dockerCli.StartContainer(e.ctx, stepConf)
+
+	if err != nil {
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.StepFailed,
+			ExecutionId: e.jobExecution.Id,
+			Value:       fmt.Sprintf("%s has failed : %s", step.Name, err.Error()),
+		})
+		stepExecution.Status = model.Failure
+		stepExecution.Logs = err.Error()
+		return
+	}
+
+	w := &logWriter{
+		jobId:       string(e.job.Id),
+		executionId: e.jobExecution.Id,
+	}
+
+	err, _ = dockerCli.FollowLogs(e.ctx, c.Id, w)
+
+	if err != nil {
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.StepFailed,
+			ExecutionId: e.jobExecution.Id,
+			Value:       fmt.Sprintf("%s failed : %s", step.Name, err.Error()),
+		})
+		stepExecution.Status = model.Failure
+		stepExecution.Logs = err.Error()
+		return
+	}
+
+	containerResult := c.WaitForStop(e.cancelChan)
+
+	if containerResult.Status == container.Success {
+		stepExecution.Status = model.Success
+		stepExecution.Logs = string(w.logs)
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.StepSucceed,
+			ExecutionId: e.jobExecution.Id,
+			Value:       fmt.Sprintf("Finished %s", step.Name),
+		})
+	} else if containerResult.Status == container.Error {
+		stepExecution.Status = model.Failure
+		stepExecution.Logs = string(w.logs)
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.StepFailed,
+			ExecutionId: e.jobExecution.Id,
+			Value:       containerResult.ErrMsg,
+		})
+	} else {
+		stepExecution.Status = model.Canceled
+		stepExecution.Logs = string(w.logs)
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.StepCanceled,
+			ExecutionId: e.jobExecution.Id,
+			Value:       fmt.Sprintf("Finished %s", step.Name),
+		})
+	}
+
+	removeOptions := container.ContainerRemoveOptions{Force: true, RemoveVolumes: true}
+
+	dockerCli.RemoveContainer(e.ctx, c.Id, removeOptions)
+}
+
+func getRegistryAuth(step model.Step) string {
+	if step.Image.Registry != nil {
+		registryAuth := struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+		}{
+			Username: step.Image.Registry.User,
+			Password: step.Image.Registry.Password,
+		}
+		data, _ := json.Marshal(registryAuth)
+		fmt.Println(string(data))
+		return base64.StdEncoding.EncodeToString(data)
+	} else {
+		return ""
+	}
 }
 
 type logWriter struct {
-	logs []byte
+	jobId       string
+	executionId string
+	logs        []byte
 }
 
 func (l *logWriter) Write(p []byte) (n int, err error) {
-	// for the moment, the implementation is pretty naive.
-	// we must consider buffering the logs directly to persistence
-	// layer instead
-	l.logs = append(l.logs, p...)
+	if len(p) > 0 {
+		Broadcast(string(l.jobId), model.Event{
+			Type:        model.NewLog,
+			ExecutionId: l.executionId,
+			Value:       strings.TrimSpace(string(p)),
+		})
+
+		l.logs = append(l.logs, p...)
+	}
 	return len(p), nil
 }

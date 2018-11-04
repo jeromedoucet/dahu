@@ -18,7 +18,7 @@ import (
 
 func TestCheckWhenNotAuthenticated(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -51,7 +51,7 @@ func TestCheckWhenNotAuthenticated(t *testing.T) {
 
 func TestCheckPrivateRepoConfigurationSshWithMissingKey(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -86,7 +86,7 @@ func TestCheckPrivateRepoConfigurationSshWithMissingKey(t *testing.T) {
 
 func TestCheckPrivateRepoConfigurationSshWithUnknownRepository(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -121,7 +121,7 @@ func TestCheckPrivateRepoConfigurationSshWithUnknownRepository(t *testing.T) {
 
 func TestCheckPrivateRepoConfigurationSshWithBadCredentials(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -156,7 +156,7 @@ func TestCheckPrivateRepoConfigurationSshWithBadCredentials(t *testing.T) {
 
 func TestCheckPrivateRepoConfigurationSshWithPasswordUnSuccessfully(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -191,7 +191,7 @@ func TestCheckPrivateRepoConfigurationSshWithPasswordUnSuccessfully(t *testing.T
 
 func TestCheckPrivateRepoConfigurationSshWithPasswordSuccessfully(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -226,7 +226,7 @@ func TestCheckPrivateRepoConfigurationSshWithPasswordSuccessfully(t *testing.T) 
 
 func TestCheckPrivateRepoConfigurationSshWithoutPasswordSuccessfully(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -261,7 +261,7 @@ func TestCheckPrivateRepoConfigurationSshWithoutPasswordSuccessfully(t *testing.
 
 func TestCheckPrivateRepoConfigurationHttpBadCredentials(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -296,7 +296,7 @@ func TestCheckPrivateRepoConfigurationHttpBadCredentials(t *testing.T) {
 
 func TestCheckPrivateRepoConfigurationHttpUnknowUrl(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -331,7 +331,7 @@ func TestCheckPrivateRepoConfigurationHttpUnknowUrl(t *testing.T) {
 
 func TestCheckPrivateRepoConfigurationHttpSuccessfully(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -366,7 +366,7 @@ func TestCheckPrivateRepoConfigurationHttpSuccessfully(t *testing.T) {
 
 func TestCheckPublicRepoConfigurationHttpSuccessfully(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 

@@ -39,7 +39,7 @@ func CheckClone(ctx context.Context, gitConfig model.GitConfig) int {
 		return http.StatusInternalServerError
 	}
 
-	stopOptions := container.ContainerStopOptions{Force: true, RemoveVolumes: true}
+	stopOptions := container.ContainerRemoveOptions{Force: true, RemoveVolumes: true}
 	req := buildCheckCloneRequest(gitConfig)
 	var reqStatus int
 	reqStatus = doCloneForHttp(dahuGit.Ip, req)
@@ -50,7 +50,7 @@ func CheckClone(ctx context.Context, gitConfig model.GitConfig) int {
 	// this is because if we have trouble to stop a simple
 	// container, then the whole system is in deep trouble.
 	// Meaning there is a need for deeper investigations.
-	err = dockerCli.StopContainer(ctx, dahuGit.Id, stopOptions)
+	err = dockerCli.RemoveContainer(ctx, dahuGit.Id, stopOptions)
 	if err != nil {
 		return http.StatusInternalServerError
 	}
@@ -85,6 +85,7 @@ type CloneConfiguration struct {
 	LogWriter  io.Writer
 }
 
+// todo factorisation with CheckClone()
 func Clone(ctx context.Context, conf CloneConfiguration) error {
 	dockerCli := container.DockerClient
 	var err error
@@ -117,13 +118,13 @@ func Clone(ctx context.Context, conf CloneConfiguration) error {
 		return err
 	}
 
-	stopOptions := container.ContainerStopOptions{Force: true, RemoveVolumes: true}
+	removeOptions := container.ContainerRemoveOptions{Force: true, RemoveVolumes: true}
 
 	req := buildCloneRequest(conf)
 	err = doCloneForJob(dahuGit.Ip, req)
 	if err != nil {
 		// Don't forget to stop the container anyway !
-		dockerCli.StopContainer(ctx, dahuGit.Id, stopOptions)
+		dockerCli.RemoveContainer(ctx, dahuGit.Id, removeOptions)
 		<-waitLog
 		return err
 	}
@@ -134,7 +135,7 @@ func Clone(ctx context.Context, conf CloneConfiguration) error {
 	// this is because if we have trouble to stop a simple
 	// container, then the whole system is in deep trouble.
 	// Meaning there is a need for deeper investigations.
-	err = dockerCli.StopContainer(ctx, dahuGit.Id, stopOptions)
+	err = dockerCli.RemoveContainer(ctx, dahuGit.Id, removeOptions)
 	<-waitLog
 
 	return err

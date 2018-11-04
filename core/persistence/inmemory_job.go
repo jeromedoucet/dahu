@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/jeromedoucet/dahu/core/model"
@@ -44,7 +45,22 @@ func (i *inMemory) GetJob(id []byte, ctx context.Context) (*model.Job, Persisten
 			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs. The database may be corrupted !")
 		}
 		data := b.Get(id)
+		if data == nil {
+			return newPersistenceError(fmt.Sprintf("No Job with id %s found", string(id)), NotFound)
+		}
 		mErr := json.Unmarshal(data, &job)
+		if mErr == nil {
+			for index, step := range job.Steps {
+				if step.Image.RegistryId != "" {
+					registry, regErr := i.GetDockerRegistry([]byte(step.Image.RegistryId), ctx)
+					if regErr != nil {
+						return regErr
+					} else {
+						job.Steps[index].Image.Registry = registry
+					}
+				}
+			}
+		}
 		return mErr
 	})
 	if err == nil {
@@ -75,7 +91,32 @@ func (i *inMemory) GetJobs(ctx context.Context) ([]*model.Job, PersistenceError)
 }
 
 func (i *inMemory) UpsertJobExecution(ctx context.Context, jobId string, execution *model.JobExecution) (*model.JobExecution, PersistenceError) {
-	return nil, nil
+	err := i.doUpdateAction(func(tx *bolt.Tx) error {
+		var updateErr error
+		if execution.Id == "" {
+			return errors.New("persistence >> Cannot persist a job execution without id !")
+		}
+		b := tx.Bucket([]byte("jobsExecutions"))
+		if b == nil {
+			return errors.New("persistence >> CRITICAL error. No bucket for storing jobs execution. The database may be corrupted !")
+		}
+		eb, err := b.CreateBucketIfNotExists([]byte(jobId))
+		if err != nil {
+			return err
+		}
+		var data []byte
+		data, updateErr = json.Marshal(execution)
+		if updateErr != nil {
+			return updateErr
+		}
+		updateErr = eb.Put([]byte(execution.Id), data)
+		return updateErr
+	})
+	if err == nil {
+		return execution, nil
+	} else {
+		return nil, wrapError(err)
+	}
 }
 
 func doFetchJobs(c *bolt.Cursor, jobs []*model.Job) ([]*model.Job, error) {

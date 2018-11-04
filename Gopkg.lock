@@ -100,6 +100,14 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
+  name = "github.com/gorilla/websocket"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d"
+  version = "v1.4.0"
+
+[[projects]]
   branch = "master"
   digest = "1:05cacd413f8a65d8fc9bee18f2e9c2d67568ec11bf4e4d37daef0270276ce90e"
   name = "github.com/jeromedoucet/dahu-git"
@@ -109,22 +117,22 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:00b850dbe54b51aaa97ba9f2c84ac23f28de20d1f4c778adacee46344198dfac"
+  digest = "1:43071fb9f0507897e00fba66c47c095941731414aaf989fd3071149bc2b19a54"
   name = "github.com/jeromedoucet/dahu-tests"
   packages = [
     "container",
     "ssh",
   ]
   pruneopts = "UT"
-  revision = "bed07c9bb243420d9faaf7be651fc6df64dfbb8f"
+  revision = "37fa8a1be6f277f016cb05c719268db04d67a4f2"
 
 [[projects]]
   branch = "master"
-  digest = "1:3759f5723555b1ca4fea4a5fdb3e4e663f840eeea5a356b165839b8b118e986b"
+  digest = "1:36c910f887424baa019de8934f0d55e8e22ec025f1eda17b26a85bc83d921904"
   name = "github.com/jeromedoucet/route"
   packages = ["."]
   pruneopts = "UT"
-  revision = "433bbab543a11949531a1a2af0893a65b6519830"
+  revision = "645f15ca597ae7fe382fc760ec42c9961cbff10c"
 
 [[projects]]
   digest = "1:ee4d4af67d93cc7644157882329023ce9a7bcfce956a079069a9405521c7cc8d"
@@ -199,9 +207,11 @@
     "github.com/docker/docker/api/types/container",
     "github.com/docker/docker/api/types/mount",
     "github.com/docker/docker/api/types/network",
+    "github.com/docker/docker/api/types/strslice",
     "github.com/docker/docker/api/types/volume",
     "github.com/docker/docker/client",
     "github.com/docker/go-connections/nat",
+    "github.com/gorilla/websocket",
     "github.com/jeromedoucet/dahu-git/types",
     "github.com/jeromedoucet/dahu-tests/container",
     "github.com/jeromedoucet/dahu-tests/ssh",

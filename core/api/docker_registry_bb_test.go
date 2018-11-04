@@ -24,7 +24,7 @@ func TestUnsuportedOperationOnRegistry(t *testing.T) {
 	registry.NewLastModificationTime()
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry)
@@ -64,7 +64,7 @@ func TestUnsuportedOperationOnRegistries(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -108,7 +108,7 @@ func TestUpdateDockerRegistryNotAuthenticated(t *testing.T) {
 	registry.NewLastModificationTime()
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -153,7 +153,7 @@ func TestUpdateUnknownDockerRegistry(t *testing.T) {
 	expectedErrorMsg := fmt.Sprintf("No docker registry with id %s found", registry.Id)
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -210,7 +210,7 @@ func TestUpdateDockerRegistryConflict(t *testing.T) {
 	referenceModificationTime := registry.LastModificationTime
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry.DockerRegistry)
@@ -272,7 +272,7 @@ func TestUpdateDockerRegistry(t *testing.T) {
 	registry.NewLastModificationTime()
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry.DockerRegistry)
@@ -328,7 +328,7 @@ func TestListDockerRegistryNotAuthenticated(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -365,7 +365,7 @@ func TestListDockerRegistry(t *testing.T) {
 	registry2.GenerateId()
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry1.Id), registry1)
@@ -427,7 +427,7 @@ func TestDeleteDockerRegistryNotAuthenticated(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -462,7 +462,7 @@ func TestDeleteUnknownDockerRegistry(t *testing.T) {
 	expectedErrorMsg := "No docker registry with id 1 found"
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -507,7 +507,7 @@ func TestDeleteDockerRegistry(t *testing.T) {
 	registry.GenerateId()
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry)
@@ -552,7 +552,7 @@ func TestGetDockerRegistry(t *testing.T) {
 	registry.GenerateId()
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	tests.InsertObject(conf, []byte("dockerRegistries"), []byte(registry.Id), registry)
@@ -600,7 +600,7 @@ func TestGetDockerRegistryNotAuthenticated(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -634,7 +634,7 @@ func TestGetUnknownDockerRegistry(t *testing.T) {
 	expectedErrorMsg := "No docker registry with id 1 found"
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -677,7 +677,7 @@ func TestCreateANewDockerRegistryNotAuthenticated(t *testing.T) {
 	t.SkipNow()
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -712,7 +712,7 @@ func TestCreateANewDockerRegistry(t *testing.T) {
 	// given
 
 	// configuration
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -760,7 +760,7 @@ func TestCreateANewDockerRegistry(t *testing.T) {
 
 func TestCheckPrivateRegistryNotAuthenticated(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -792,7 +792,7 @@ func TestCheckPrivateRegistryNotAuthenticated(t *testing.T) {
 
 func TestCheckPrivateRegistrySuccessfully(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -827,7 +827,7 @@ func TestCheckPrivateRegistrySuccessfully(t *testing.T) {
 func TestCheckRegistryBadDockerCredential(t *testing.T) {
 	// given
 	expectedErrorMsg := "Error response from daemon: login attempt to http://localhost:5000/v2/ failed with status: 401 Unauthorized"
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -869,7 +869,7 @@ func TestCheckRegistryBadDockerCredential(t *testing.T) {
 func TestCheckRegistryNoDockerCredential(t *testing.T) {
 	// given
 	expectedErrorMsg := "Error response from daemon: Get http://localhost:5000/v2/: no basic auth credentials"
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 
@@ -910,7 +910,7 @@ func TestCheckRegistryNoDockerCredential(t *testing.T) {
 
 func TestCheckUnknownRegistry(t *testing.T) {
 	// given
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 

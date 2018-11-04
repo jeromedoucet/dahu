@@ -20,7 +20,7 @@ func TestAuthenticationShouldReturn200AndAToken(t *testing.T) {
 	// given
 
 	// setup the conf
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -78,7 +78,7 @@ func TestAuthenticationShouldReturn404AndNoTokenWhenNoUserFound(t *testing.T) {
 	// given
 
 	// setup the conf
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)
@@ -120,7 +120,7 @@ func TestAuthenticationShouldReturn401AndNoTokenWhenBadPassword(t *testing.T) {
 	// given
 
 	// setup the conf
-	conf := configuration.InitConf()
+	conf = configuration.InitConf()
 	conf.ApiConf.Port = 4444
 	conf.ApiConf.Secret = "secret"
 	defer tests.CleanPersistence(conf)

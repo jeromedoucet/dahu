@@ -37,3 +37,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/jeromedoucet/dahu-tests"
+
+[[constraint]]
+  name = "github.com/gorilla/websocket"
+  version = "1.4.0"

@@ -107,6 +107,10 @@ func createBucketsIfNeeded(tx bucketCreationTransaction) error {
 	if err != nil {
 		return fmt.Errorf("ERROR >> dockerRegistry bucket creation failed : %s", err)
 	}
+	_, err = tx.CreateBucketIfNotExists([]byte("jobsExecutions"))
+	if err != nil {
+		return fmt.Errorf("ERROR >> jobsExecutions bucket creation failed : %s", err)
+	}
 	return nil
 }
 

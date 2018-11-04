@@ -8,8 +8,6 @@ import (
 	"github.com/jeromedoucet/dahu/configuration"
 )
 
-var gitRepoIp string
-
 func TestMain(m *testing.M) {
 	dockerApiVersion := configuration.DockerApiVersion
 	gogsId := container.StartGogs(dockerApiVersion)

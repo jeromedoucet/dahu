@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	client "github.com/docker/docker/client"
@@ -25,19 +26,49 @@ type Port struct {
 	Protocol string
 }
 
+type ContainerEnvs map[string]string
+
+func (e ContainerEnvs) ToArray() []string {
+	res := make([]string, len(e), len(e))
+	i := 0
+	for key, val := range e {
+		res[i] = fmt.Sprintf("%s=%s", key, val)
+		i++
+	}
+	return res
+}
+
 type ContainerStartConf struct {
-	ImageName    string
-	ExposedPorts []Port
-	Mounts       []Mount
-	WaitFn       func(ip string) error
+	ImageName     string
+	RegistryToken string
+	Command       []string
+	Envs          ContainerEnvs
+	ExposedPorts  []Port
+	Mounts        []Mount
+	WorkingDir    string
+	WaitFn        func(ip string) error
+}
+
+type ContainerStatus string
+
+const (
+	Success  ContainerStatus = "success"
+	Error    ContainerStatus = "error"
+	Canceled ContainerStatus = "canceled"
+)
+
+type ContainerResult struct {
+	Status ContainerStatus
+	ErrMsg string
 }
 
 type ContainerInstance struct {
-	Id string
-	Ip string
+	Id          string
+	Ip          string
+	WaitForStop func(chan interface{}) ContainerResult
 }
 
-type ContainerStopOptions struct {
+type ContainerRemoveOptions struct {
 	RemoveVolumes bool
 	Force         bool
 }
@@ -46,8 +77,9 @@ type ContainerStopOptions struct {
 type ContainerClient interface {
 	CheckRegistryConnection(ctx context.Context, conf RegistryBasicConf) ContainerError
 	CreateVolume(ctx context.Context, volumeName string) ContainerError
+	RemoveVolume(ctx context.Context, volumeName string) ContainerError
 	StartContainer(ctx context.Context, conf ContainerStartConf) (ContainerInstance, ContainerError)
-	StopContainer(ctx context.Context, id string, options ContainerStopOptions) ContainerError
+	RemoveContainer(ctx context.Context, id string, options ContainerRemoveOptions) ContainerError
 	FollowLogs(ctx context.Context, containerId string, logWriter io.Writer) (ContainerError, chan interface{})
 }
 

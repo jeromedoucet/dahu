@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/api/types/volume"
 	client "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -49,7 +51,7 @@ func (d dockerClient) StartContainer(ctx context.Context, conf ContainerStartCon
 	defer cli.Close() // todo consider handling the error
 
 	// pull the image right now
-	err = pullImage(ctx, conf.ImageName, cli)
+	err = pullImage(ctx, conf, cli)
 	if err != nil {
 		return instance, fromDockerToContainerError(err)
 	}
@@ -60,7 +62,13 @@ func (d dockerClient) StartContainer(ctx context.Context, conf ContainerStartCon
 		return instance, fromDockerToContainerError(err)
 	}
 	mounts := createMounts(conf.Mounts)
-	containerConf := &container.Config{Image: conf.ImageName, ExposedPorts: exposedPorts}
+	containerConf := &container.Config{
+		Image:        conf.ImageName,
+		ExposedPorts: exposedPorts,
+		Cmd:          strslice.StrSlice(conf.Command),
+		WorkingDir:   conf.WorkingDir,
+		Env:          conf.Envs.ToArray(),
+	}
 	hostConfig := &container.HostConfig{Mounts: mounts}
 	networkConfig := &network.NetworkingConfig{}
 
@@ -76,6 +84,24 @@ func (d dockerClient) StartContainer(ctx context.Context, conf ContainerStartCon
 	err = cli.ContainerStart(ctx, createdContainer.ID, types.ContainerStartOptions{})
 	if err != nil {
 		return instance, fromDockerToContainerError(err)
+	}
+
+	chanRes, chanErr := cli.ContainerWait(ctx, createdContainer.ID, "")
+
+	instance.WaitForStop = func(cancelChan chan interface{}) ContainerResult {
+		select {
+		case <-cancelChan:
+			return ContainerResult{Status: Canceled}
+		case err = <-chanErr:
+			if err != nil {
+				return ContainerResult{Status: Error, ErrMsg: err.Error()}
+			}
+		case res := <-chanRes:
+			if res.StatusCode != int64(0) {
+				return ContainerResult{Status: Error, ErrMsg: fmt.Sprintf("The command return a non 0 code : %d", res.StatusCode)}
+			}
+		}
+		return ContainerResult{Status: Success}
 	}
 
 	// TODO at this step, when an error is raised, don't forget
@@ -105,7 +131,7 @@ func (d dockerClient) StartContainer(ctx context.Context, conf ContainerStartCon
 	return instance, nil
 }
 
-func (d dockerClient) StopContainer(ctx context.Context, id string, options ContainerStopOptions) ContainerError {
+func (d dockerClient) RemoveContainer(ctx context.Context, id string, options ContainerRemoveOptions) ContainerError {
 	cli, err := client.NewClientWithOpts(client.WithVersion(d.dockerApiVersion))
 	if err != nil {
 		return fromDockerToContainerError(err)
@@ -128,8 +154,18 @@ func (d dockerClient) CreateVolume(ctx context.Context, volumeName string) Conta
 	return fromDockerToContainerError(err)
 }
 
+func (d dockerClient) RemoveVolume(ctx context.Context, volumeName string) ContainerError {
+	cli, err := client.NewClientWithOpts(client.WithVersion(d.dockerApiVersion))
+	if err != nil {
+		return fromDockerToContainerError(err)
+	}
+	defer cli.Close()
+	return fromDockerToContainerError(cli.VolumeRemove(ctx, volumeName, true))
+}
+
 func (d dockerClient) FollowLogs(ctx context.Context, containerId string, logWriter io.Writer) (ContainerError, chan interface{}) {
 	cli, err := client.NewClientWithOpts(client.WithVersion(d.dockerApiVersion))
+	defer cli.Close()
 	if err != nil {
 		log.Printf("ERROR >> FollowLogs encounter error : %s", err.Error())
 		return fromDockerToContainerError(err), nil
@@ -178,8 +214,8 @@ func (d dockerClient) doFollowLogs(logChan chan interface{}, in io.ReadCloser, l
 	}
 }
 
-func pullImage(ctx context.Context, imageName string, cli *client.Client) error {
-	out, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{})
+func pullImage(ctx context.Context, conf ContainerStartConf, cli *client.Client) error {
+	out, err := cli.ImagePull(ctx, conf.ImageName, types.ImagePullOptions{RegistryAuth: conf.RegistryToken})
 	if err != nil {
 		return err
 	}
