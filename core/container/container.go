@@ -39,6 +39,7 @@ func (e ContainerEnvs) ToArray() []string {
 }
 
 type ContainerStartConf struct {
+	ContainerName string
 	ImageName     string
 	RegistryToken string
 	Command       []string
@@ -47,6 +48,7 @@ type ContainerStartConf struct {
 	Mounts        []Mount
 	WorkingDir    string
 	WaitFn        func(ip string) error
+	NetworkId     string
 }
 
 type ContainerStatus string
@@ -81,6 +83,8 @@ type ContainerClient interface {
 	StartContainer(ctx context.Context, conf ContainerStartConf) (ContainerInstance, ContainerError)
 	RemoveContainer(ctx context.Context, id string, options ContainerRemoveOptions) ContainerError
 	FollowLogs(ctx context.Context, containerId string, logWriter io.Writer) (ContainerError, chan interface{})
+	CreateNetwork(ctx context.Context, name string) (ContainerError, string)
+	DeleteNetwork(ctx context.Context, id string) ContainerError
 }
 
 type RegistryBasicConf struct {

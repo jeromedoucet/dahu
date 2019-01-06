@@ -56,6 +56,10 @@ func TestJobExecutionSuite(t *testing.T) {
 	afterEach()
 
 	beforeEach()
+	t.Run("job with one step and service sucess execution", serviceJobSuccess)
+	afterEach()
+
+	beforeEach()
 	t.Run("simple job with two step sucess execution and private registry", simpleJobSuccessWithPrivateRegistry)
 	afterEach()
 
@@ -71,15 +75,12 @@ func TestJobExecutionSuite(t *testing.T) {
 	t.Run("simple job cancelation", simpleJobCancel)
 	afterEach()
 
-	// TODO test services
-	// TODO add environnement variables
 	// TODO make sure the volume is not deleted => delete it at the end of the test
 	// TODO check that all container are deleted
 	// TODO clean of the listner content
 	// TODO graceful stop of notifier
 	// TODO test on another branch
 	// TODO improve job execution saving
-	// TODO failure and success notifications
 	// TODO enpoint to job execution => list, details, delete
 }
 
@@ -212,6 +213,103 @@ func simpleJobSuccess(t *testing.T) {
 
 	if events[13].Type != model.JobSucceed {
 		t.Fatalf("expect event n %d, to be of type %s, but is %s", 14, model.JobStart, events[13].Type)
+	}
+}
+
+// this case will check that a service (here nginx) may be
+// available for one job.
+func serviceJobSuccess(t *testing.T) {
+	// given
+	authConfig := model.SshAuthConfig{Url: fmt.Sprintf("ssh://git@%s/tester/test-repo.git", gitRepoIp), Key: ssh.PrivateProtected, KeyPassword: "tester"}
+	gitConfig := model.GitConfig{SshAuth: &authConfig}
+	job := model.Job{
+		Name:            "test",
+		GitConf:         gitConfig,
+		RemoveWorkspace: true,
+		Steps: []model.Step{
+			model.Step{
+				Name:          "create file on debian",
+				Image:         model.Image{Name: "fedora"},
+				Command:       []string{"/bin/sh", "-c", `curl -s -o /dev/null -w "%{http_code}\n" http://"${Nginx_Test_HOST}"`},
+				MountingPoint: "/build",
+				Services: []*model.Service{
+					&model.Service{
+						Name:  "Nginx_Test",
+						Image: model.Image{Name: "nginx"},
+						ExposedPorts: []*model.Port{
+							&model.Port{Num: 80, Prototype: "http"},
+						},
+					},
+				},
+			},
+		},
+	}
+	// "%{http_code}\n" http://"${Nginx_Test_HOST}"
+	job.GenerateId()
+	tests.InsertObject(conf, []byte("jobs"), job.Id, job)
+
+	// Start the server AFTER inserting the data.
+	s = httptest.NewServer(api.InitRoute(conf).Handler())
+
+	tokenStr := tests.GetToken(conf.ApiConf.Secret, time.Now().Add(1*time.Minute))
+	h := http.Header{}
+	h.Add("Authorization", "Bearer "+tokenStr)
+
+	wsConn := openWsConn(s.URL, fmt.Sprintf("/jobs/%s/live", string(job.Id)), h, t)
+	eventsChan := collectWsEvent(wsConn, t)
+
+	execution := struct {
+		Branch string `json:"branch"`
+	}{
+		"master",
+	}
+	body, _ := json.Marshal(execution)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/jobs/%s/executions", s.URL, job.Id), bytes.NewBuffer(body))
+	req.Header = h
+	cli := &http.Client{}
+
+	// when
+	resp, err := cli.Do(req)
+
+	// then
+	if err != nil {
+		t.Fatalf("Expect to have to error, but got %s", err.Error())
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("Expect 200 return code .Got %d", resp.StatusCode)
+	}
+
+	events := <-eventsChan
+	if len(events) != 12 {
+		t.Fatalf("expect %d events, got %d", 12, len(events))
+	}
+
+	if events[0].Type != model.JobStart {
+		t.Fatalf("expect event n %d, to be of type %s, but is %s", 1, model.JobStart, events[0].Type)
+	}
+
+	if events[1].Type != model.StepStart {
+		t.Fatalf("expect event n %d, to be of type %s, but is %s", 2, model.StepStart, events[1].Type)
+	}
+
+	if events[7].Type != model.StepSucceed {
+		t.Fatalf("expect event n %d, to be of type %s, but is %s", 8, model.StepSucceed, events[7].Type)
+	}
+
+	if events[8].Type != model.StepStart {
+		t.Fatalf("expect event n %d, to be of type %s, but is %s", 8, model.StepStart, events[8].Type)
+	}
+
+	if events[9].Value != "200" {
+		t.Fatalf("expect event n %d, to be of type %s, but is %s", 9, "200", events[9].Value)
+	}
+
+	if events[10].Type != model.StepSucceed {
+		t.Fatalf("expect event n %d, to be of type %s, but is %s", 10, model.StepSucceed, events[10].Type)
+	}
+
+	if events[11].Type != model.JobSucceed {
+		t.Fatalf("expect event n %d, to be of type %s, but is %s", 11, model.JobStart, events[11].Type)
 	}
 }
 

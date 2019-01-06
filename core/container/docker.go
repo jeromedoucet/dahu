@@ -75,7 +75,13 @@ func (d dockerClient) StartContainer(ctx context.Context, conf ContainerStartCon
 	// the first step is to create the container. It is worth to notice
 	// that it is not running yet
 	var createdContainer container.ContainerCreateCreatedBody
-	createdContainer, err = cli.ContainerCreate(ctx, containerConf, hostConfig, networkConfig, "")
+	createdContainer, err = cli.ContainerCreate(ctx, containerConf, hostConfig, networkConfig, conf.ContainerName)
+	if err != nil {
+		return instance, fromDockerToContainerError(err)
+	}
+
+	// if a network is specified, join it
+	err = cli.NetworkConnect(ctx, conf.NetworkId, createdContainer.ID, nil)
 	if err != nil {
 		return instance, fromDockerToContainerError(err)
 	}
@@ -161,6 +167,36 @@ func (d dockerClient) RemoveVolume(ctx context.Context, volumeName string) Conta
 	}
 	defer cli.Close()
 	return fromDockerToContainerError(cli.VolumeRemove(ctx, volumeName, true))
+}
+
+func (d dockerClient) CreateNetwork(ctx context.Context, name string) (ContainerError, string) {
+	var res types.NetworkCreateResponse
+	cli, err := client.NewClientWithOpts(client.WithVersion(d.dockerApiVersion))
+	if err != nil {
+		return fromDockerToContainerError(err), ""
+	}
+	defer cli.Close()
+	opt := types.NetworkCreate{
+		CheckDuplicate: true,
+		EnableIPv6:     false,
+		Attachable:     true,
+		Ingress:        false,
+	}
+
+	res, err = cli.NetworkCreate(ctx, name, opt)
+	if err != nil {
+		return fromDockerToContainerError(err), ""
+	}
+
+	return nil, res.ID
+}
+
+func (d dockerClient) DeleteNetwork(ctx context.Context, id string) ContainerError {
+	cli, err := client.NewClientWithOpts(client.WithVersion(d.dockerApiVersion))
+	if err != nil {
+		return fromDockerToContainerError(err)
+	}
+	return fromDockerToContainerError(cli.NetworkRemove(ctx, id))
 }
 
 func (d dockerClient) FollowLogs(ctx context.Context, containerId string, logWriter io.Writer) (ContainerError, chan interface{}) {

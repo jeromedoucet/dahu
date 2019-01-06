@@ -54,17 +54,35 @@ type Step struct {
 	Envs          map[string]string
 	Command       []string   // the command of the step
 	MountingPoint string     // the place where the volume should be mounted. TODO think of a default value ?
-	Services      []Services // services that are needed for this step. For example a Database for an integration tests step.
+	Services      []*Service // services that are needed for this step. For example a Database for an integration tests step.
 }
 
-// Services that may needed for
+// return Envs of the step and
+// additional env entries bases on
+// available services
+func (s Step) ComputeEnvs() map[string]string {
+	var res map[string]string
+	if s.Envs == nil && len(s.Services) > 0 {
+		res = make(map[string]string, len(s.Services))
+	} else {
+		res = s.Envs
+	}
+	for _, service := range s.Services {
+		// for each services on step, we know that
+		// it will be available through its name
+		res[fmt.Sprintf("%s_HOST", service.Name)] = service.Name
+	}
+	return res
+}
+
+// Service that may needed for
 // some step (for example integration tests).
 // A name, the image and exposed port have to
 // be defined
-type Services struct {
-	Name         string // name under wich the service will be available during the step
-	Image        Image  // container image
-	ExposedPorts []Port // exposed ports
+type Service struct {
+	Name         string  // name under wich the service will be available during the step
+	Image        Image   // container image
+	ExposedPorts []*Port // exposed ports
 }
 
 // Container image. Contains

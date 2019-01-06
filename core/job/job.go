@@ -38,6 +38,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/jeromedoucet/dahu/configuration"
@@ -75,6 +76,7 @@ type execution struct {
 	sourcesVolume string
 	conf          *configuration.Conf
 	repository    persistence.Repository
+	networkId     string
 }
 
 // Run contains the main loop of a job execution process.
@@ -88,6 +90,21 @@ func (e execution) run() {
 		ExecutionId: e.jobExecution.Id,
 		Value:       fmt.Sprintf("Start execute job %s on branch %s", e.job.Name, e.jobExecution.BranchName),
 	})
+
+	// all container are attached to a custom network
+	err, networkId := container.DockerClient.CreateNetwork(e.ctx, fmt.Sprintf("network-%s", e.jobExecution.Id))
+	if err != nil {
+		// todo update endJob to accept an optional error
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.NewLog,
+			ExecutionId: e.jobExecution.Id,
+			Value:       fmt.Sprintf("Error when creating a network : %s ", err.Error()),
+		})
+		e.endJob(model.Failure)
+		return
+	}
+
+	e.networkId = networkId
 
 	fetchExecution := &model.StepExecution{Name: "Code fetching", Status: model.Running}
 	e.jobExecution.Steps = append(e.jobExecution.Steps, fetchExecution)
@@ -103,7 +120,7 @@ func (e execution) run() {
 			e.jobExecution.Steps = append(e.jobExecution.Steps, stepExecution)
 
 			e.repository.UpsertJobExecution(e.ctx, string(e.job.Id), &e.jobExecution)
-			e.executeStep(step, stepExecution)
+			e.executeStep(&step, stepExecution)
 			e.repository.UpsertJobExecution(e.ctx, string(e.job.Id), &e.jobExecution)
 
 			if stepExecution.Status == model.Failure || stepExecution.Status == model.Canceled {
@@ -121,8 +138,8 @@ func (e execution) run() {
 // endJob handle terminal operation of a job execution. Workspace
 // cleaning, end event broacasting, execution unregistrations...
 func (e execution) endJob(terminationStatus model.ExecutionStatus) {
+	containerCli := container.DockerClient
 	if e.job.RemoveWorkspace {
-		containerCli := container.DockerClient
 		err := containerCli.RemoveVolume(e.ctx, e.sourcesVolume) // TODO handle that error a clean way
 		if err != nil {
 			log.Printf("ERROR >> run encounter error : %s", err.Error())
@@ -147,10 +164,14 @@ func (e execution) endJob(terminationStatus model.ExecutionStatus) {
 			Value:       fmt.Sprintf("Canceled job %s execution on branch %s", e.job.Name, e.jobExecution.BranchName),
 		})
 	}
+
 	// Don't forget that. This is permit to clean references
 	// in the job execution scheduler.
 	unRegisterJobExecution(string(e.job.Id), e.jobExecution.Id)
 	e.repository.UpsertJobExecution(e.ctx, string(e.job.Id), &e.jobExecution)
+
+	// at the end, the network should be remove
+	containerCli.DeleteNetwork(e.ctx, e.networkId)
 }
 
 // fetchSources is the first step of a job execution. Like
@@ -177,6 +198,7 @@ func (e execution) fetchSources(stepExecution *model.StepExecution) {
 		BranchName: e.jobExecution.BranchName,
 		VolumeName: e.sourcesVolume,
 		LogWriter:  w,
+		NetworkId:  e.networkId,
 	}
 
 	err := scm.Clone(e.ctx, cloneConf)
@@ -202,14 +224,32 @@ func (e execution) fetchSources(stepExecution *model.StepExecution) {
 // executeStep is responsible for preparing a step, run it, notifying
 // events.
 // It heavily rely on container package, that abstract container manipulations.
-func (e execution) executeStep(step model.Step, stepExecution *model.StepExecution) {
+func (e execution) executeStep(step *model.Step, stepExecution *model.StepExecution) {
+	var c container.ContainerInstance
+	var err error
+	var services []*container.ContainerInstance
+
 	Broadcast(string(e.job.Id), model.Event{
 		Type:        model.StepStart,
 		ExecutionId: e.jobExecution.Id,
 		Value:       fmt.Sprintf("Start %s", step.Name),
 	})
 
-	registryToken := getRegistryAuth(step)
+	err, services = e.startServices(step)
+	defer e.stopServices(services)
+
+	if err != nil {
+		Broadcast(string(e.job.Id), model.Event{
+			Type:        model.StepFailed,
+			ExecutionId: e.jobExecution.Id,
+			Value:       fmt.Sprintf("%s has failed : %s", step.Name, err.Error()),
+		})
+		stepExecution.Status = model.Failure
+		stepExecution.Logs = err.Error()
+		return
+	}
+
+	registryToken := getRegistryAuth(step.Image)
 
 	dockerCli := container.DockerClient
 	mounts := []container.Mount{container.Mount{Source: e.sourcesVolume, Destination: step.MountingPoint}}
@@ -219,10 +259,11 @@ func (e execution) executeStep(step model.Step, stepExecution *model.StepExecuti
 		Mounts:        mounts,
 		Command:       step.Command,
 		WorkingDir:    step.MountingPoint,
-		Envs:          step.Envs,
+		Envs:          step.ComputeEnvs(),
+		NetworkId:     e.networkId,
 	}
 
-	c, err := dockerCli.StartContainer(e.ctx, stepConf)
+	c, err = dockerCli.StartContainer(e.ctx, stepConf)
 
 	if err != nil {
 		Broadcast(string(e.job.Id), model.Event{
@@ -286,14 +327,57 @@ func (e execution) executeStep(step model.Step, stepExecution *model.StepExecuti
 	dockerCli.RemoveContainer(e.ctx, c.Id, removeOptions)
 }
 
-func getRegistryAuth(step model.Step) string {
-	if step.Image.Registry != nil {
+// startServices launch all services registered for a
+// step. It return an array of containerInstances and
+// an error if something went wrong during services launch.
+func (e execution) startServices(step *model.Step) (error, []*container.ContainerInstance) {
+
+	res := make([]*container.ContainerInstance, len(step.Services), len(step.Services))
+	dockerCli := container.DockerClient
+	for i, service := range step.Services {
+		exposedPorts := make([]container.Port, len(service.ExposedPorts), len(service.ExposedPorts))
+		for j, port := range service.ExposedPorts {
+			exposedPorts[j] = container.Port{Number: strconv.Itoa(port.Num), Protocol: port.Prototype}
+		}
+		registryToken := getRegistryAuth(service.Image)
+		serviceConf := container.ContainerStartConf{
+			ContainerName: service.Name,
+			ImageName:     service.Image.Name,
+			RegistryToken: registryToken,
+			ExposedPorts:  exposedPorts,
+			NetworkId:     e.networkId,
+		}
+		c, err := dockerCli.StartContainer(e.ctx, serviceConf)
+		if err != nil {
+			return err, res
+		} else {
+			res[i] = &c
+		}
+	}
+
+	return nil, res
+}
+
+func (e execution) stopServices(servicesInstance []*container.ContainerInstance) error {
+	dockerCli := container.DockerClient
+	for _, instance := range servicesInstance {
+		removeConf := container.ContainerRemoveOptions{true, true}
+		err := dockerCli.RemoveContainer(e.ctx, instance.Id, removeConf)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getRegistryAuth(image model.Image) string {
+	if image.Registry != nil {
 		registryAuth := struct {
 			Username string `json:"username"`
 			Password string `json:"password"`
 		}{
-			Username: step.Image.Registry.User,
-			Password: step.Image.Registry.Password,
+			Username: image.Registry.User,
+			Password: image.Registry.Password,
 		}
 		data, _ := json.Marshal(registryAuth)
 		fmt.Println(string(data))

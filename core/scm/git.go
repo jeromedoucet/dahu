@@ -83,6 +83,7 @@ type CloneConfiguration struct {
 	BranchName string
 	VolumeName string
 	LogWriter  io.Writer
+	NetworkId  string
 }
 
 // todo factorisation with CheckClone()
@@ -102,6 +103,7 @@ func Clone(ctx context.Context, conf CloneConfiguration) error {
 		ExposedPorts: []container.Port{container.Port{Number: "80", Protocol: "tcp"}},
 		WaitFn:       waitForDahuGit,
 		Mounts:       mounts,
+		NetworkId:    conf.NetworkId,
 	}
 
 	var dahuGit container.ContainerInstance
