@@ -8,6 +8,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -92,6 +93,17 @@ type Image struct {
 	Name       string // Name of the image
 	RegistryId string // external key to a registry configuration
 	Registry   *DockerRegistry
+}
+
+// ComputeName will return the Name of the image
+// regarding of its registry. If there is none, the raw name
+// is used, ${REGISTRY_URL}/${IMAGE_NAME} instead
+func (i *Image) ComputeName() string {
+	if i.Registry == nil {
+		return i.Name
+	} else {
+		return fmt.Sprintf("%s/%s", i.Registry.Url, strings.TrimPrefix(strings.TrimSpace(i.Name), "/"))
+	}
 }
 
 // Port exposed by a

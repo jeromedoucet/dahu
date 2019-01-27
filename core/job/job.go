@@ -254,7 +254,7 @@ func (e execution) executeStep(step *model.Step, stepExecution *model.StepExecut
 	dockerCli := container.DockerClient
 	mounts := []container.Mount{container.Mount{Source: e.sourcesVolume, Destination: step.MountingPoint}}
 	stepConf := container.ContainerStartConf{
-		ImageName:     step.Image.Name,
+		ImageName:     step.Image.ComputeName(),
 		RegistryToken: registryToken,
 		Mounts:        mounts,
 		Command:       step.Command,
@@ -342,7 +342,7 @@ func (e execution) startServices(step *model.Step) (error, []*container.Containe
 		registryToken := getRegistryAuth(service.Image)
 		serviceConf := container.ContainerStartConf{
 			ContainerName: service.Name,
-			ImageName:     service.Image.Name,
+			ImageName:     service.Image.ComputeName(),
 			RegistryToken: registryToken,
 			ExposedPorts:  exposedPorts,
 			NetworkId:     e.networkId,

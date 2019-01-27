@@ -334,7 +334,7 @@ func simpleJobSuccessWithPrivateRegistry(t *testing.T) {
 		Steps: []model.Step{
 			model.Step{
 				Name:          "create file on debian",
-				Image:         model.Image{Name: registry.Url + "/debian", RegistryId: registry.Id},
+				Image:         model.Image{Name: "debian", RegistryId: registry.Id},
 				Command:       []string{"/bin/sh", "-c", "echo hello world > build.out"},
 				MountingPoint: "/build",
 			},
