@@ -81,9 +81,11 @@ func (d dockerClient) StartContainer(ctx context.Context, conf ContainerStartCon
 	}
 
 	// if a network is specified, join it
-	err = cli.NetworkConnect(ctx, conf.NetworkId, createdContainer.ID, nil)
-	if err != nil {
-		return instance, fromDockerToContainerError(err)
+	if len(conf.NetworkId) > 0 {
+		err = cli.NetworkConnect(ctx, conf.NetworkId, createdContainer.ID, nil)
+		if err != nil {
+			return instance, fromDockerToContainerError(err)
+		}
 	}
 
 	// Now the container will start
